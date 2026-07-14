@@ -178,7 +178,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': 'فشل الحفظ',
   'admin.tabs.addons': 'الإضافات',
   'admin.addons.title': 'الإضافات',
-  'admin.addons.subtitle': 'فعّل أو عطّل الميزات لتخصيص تجربة TREK.',
+  'admin.addons.subtitle': 'فعّل أو عطّل الميزات لتخصيص تجربة TREK FAMILY.',
   'admin.addons.catalog.packing.name': 'القوائم',
   'admin.addons.catalog.packing.description': 'قوائم التعبئة والمهام لرحلاتك',
   'admin.addons.catalog.budget.name': 'الميزانية',
@@ -210,7 +210,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'بيانات الطقس',
   'admin.weather.badge': 'منذ 24 مارس 2026',
   'admin.weather.description':
-    'يستخدم TREK خدمة Open-Meteo كمصدر لبيانات الطقس. وهي خدمة مجانية ومفتوحة المصدر ولا تتطلب مفتاح API.',
+    'يستخدم TREK FAMILY خدمة Open-Meteo كمصدر لبيانات الطقس. وهي خدمة مجانية ومفتوحة المصدر ولا تتطلب مفتاح API.',
   'admin.weather.forecast': 'توقعات 16 يومًا',
   'admin.weather.forecastDesc': 'سابقًا 5 أيام (OpenWeatherMap)',
   'admin.weather.climate': 'بيانات المناخ التاريخية',

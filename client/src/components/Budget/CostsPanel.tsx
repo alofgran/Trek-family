@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ArrowDown, ArrowUp, BarChart3, Plus, Search, ArrowRight, ArrowLeftRight, Check, RotateCcw, Pencil, Trash2 } from 'lucide-react'
+import { TravelerAvatar } from '../Travelers/TravelerAvatar'
 import { useTripStore } from '../../store/tripStore'
 import { useAuthStore } from '../../store/authStore'
 import { useSettingsStore } from '../../store/settingsStore'
@@ -16,7 +17,7 @@ import CustomSelect from '../shared/CustomSelect'
 import { CustomDatePicker } from '../shared/CustomDateTimePicker'
 import { SYMBOLS, CURRENCIES, SPLIT_COLORS } from './BudgetPanel.constants'
 import { COST_CATEGORY_LIST, catMeta } from './costsCategories'
-import type { BudgetItem } from '../../types'
+import type { BudgetItem, BudgetItemPayer, TripTraveler } from '../../types'
 import type { TripMember } from './BudgetPanelMemberChips'
 
 interface CostsPanelProps {
@@ -50,6 +51,7 @@ const FIELD_H = 40 // shared height for the amount / currency / day row in the m
 
 export default function CostsPanel({ tripId, tripMembers = [] }: CostsPanelProps) {
   const { trip, budgetItems, deleteBudgetItem, loadBudgetItems } = useTripStore()
+  const tripTravelers = useTripStore(s => s.tripTravelers)
   const me = useAuthStore(s => s.user?.id ?? -1)
   const can = useCanDo()
   const canEdit = can('budget_edit', trip)
@@ -72,6 +74,7 @@ export default function CostsPanel({ tripId, tripMembers = [] }: CostsPanelProps
   const [editing, setEditing] = useState<BudgetItem | null>(null)
   const [editingSettlement, setEditingSettlement] = useState<Settlement | null>(null)
   const [addingPayment, setAddingPayment] = useState(false)
+  const [showSettleUp, setShowSettleUp] = useState(false)
 
   const people = tripMembers
   const personById = useCallback((id: number) => people.find(p => p.id === id), [people])
@@ -81,6 +84,14 @@ export default function CostsPanel({ tripId, tripMembers = [] }: CostsPanelProps
     return SPLIT_COLORS[(idx >= 0 ? idx : 0) % SPLIT_COLORS.length].gradient
   }, [people])
   const initial = useCallback((id: number) => id === me ? t('costs.youShort') : (personById(id)?.username || '?').charAt(0).toUpperCase(), [me, personById, t])
+
+  // Payer display prefers the traveler identity (traveler_id/traveler_name) over the
+  // account it settles under — several unlinked travelers (e.g. a parent's kids) can
+  // share one user_id, so resolving by user_id alone would show "You" for all of them.
+  const payerName = useCallback((p: BudgetItemPayer) => {
+    if (p.traveler_id != null) return p.traveler_name || '?'
+    return personName(p.user_id)
+  }, [personName])
 
   const fmt = useCallback((v: number, c = base) => formatMoney(v, c, locale), [base, locale])
   const fmt0 = useCallback((v: number, c = base) => formatMoney(v, c, locale, { decimals: 0 }), [base, locale])
@@ -118,6 +129,25 @@ export default function CostsPanel({ tripId, tripMembers = [] }: CostsPanelProps
     const owed = (settlement?.flows || []).filter(f => f.to.user_id === me).reduce((a, f) => a + f.amount, 0)
     return { totalSpend, myPaid, myShare, owe, owed }
   }, [budgetItems, settlement, me])
+
+  // "What did each traveler cost" — an equal split of each expense's total across
+  // its participating travelers, summed per traveler. Family-friendly framing:
+  // unlike settle-up balances (who owes whom), this never needs a linked account.
+  const perTravelerTotals = useMemo(() => {
+    const byTraveler = new Map<number, number>()
+    for (const e of budgetItems) {
+      const members = (e.members || []).filter(m => m.traveler_id != null)
+      if (!members.length) continue
+      const share = baseTotal(e) / members.length
+      for (const m of members) {
+        byTraveler.set(m.traveler_id!, (byTraveler.get(m.traveler_id!) || 0) + share)
+      }
+    }
+    return tripTravelers
+      .map(tr => ({ traveler: tr, total: byTraveler.get(tr.id) || 0 }))
+      .filter(r => r.total > 0.005)
+      .sort((a, b) => b.total - a.total)
+  }, [budgetItems, tripTravelers])
 
   // ── filtering + day grouping ────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -201,6 +231,16 @@ export default function CostsPanel({ tripId, tripMembers = [] }: CostsPanelProps
     return <span style={{ width: size, height: size, borderRadius: '50%', background: colorFor(id), color: '#fff', display: 'grid', placeItems: 'center', fontSize: size * 0.4, fontWeight: 700, flexShrink: 0 }}>{initial(id)}</span>
   }
 
+  // Resolves a payer's avatar via its traveler identity when available (so each
+  // child shows their own avatar/color), falling back to the account Avatar.
+  const PayerAvatar = ({ payer, size = 24 }: { payer: BudgetItemPayer; size?: number }) => {
+    if (payer.traveler_id != null) {
+      const tr = tripTravelers.find(t => t.id === payer.traveler_id)
+      if (tr) return <TravelerAvatar traveler={tr} size={size} />
+    }
+    return <Avatar id={payer.user_id} size={size} />
+  }
+
   const cardCls = 'bg-surface-card border border-edge'
   const labelCls = 'text-[11px] font-semibold uppercase tracking-[0.12em] text-content-faint'
 
@@ -255,21 +295,38 @@ export default function CostsPanel({ tripId, tripMembers = [] }: CostsPanelProps
         )}
       </div>
 
-      {/* ── Summary cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1.15fr', gap: 16, marginBottom: 36 }} className="costs-summary">
-        <SummaryCard label={t('costs.youOwe')} sub={t('costs.youOweSub')} amount={totals.owe} currency={base} locale={locale}
-          icon={<ArrowDown size={18} />} tone="owe"
-          foot={totals.owe > 0.01
-            ? <FlowPills ids={(settlement?.flows || []).filter(f => f.from.user_id === me).map(f => f.to.user_id)} lead={t('costs.to')} Avatar={Avatar} name={personName} />
-            : <span className="text-content-faint">{t('costs.allSettled')}</span>} />
-        <SummaryCard label={t('costs.youreOwed')} sub={t('costs.youreOwedSub')} amount={totals.owed} currency={base} locale={locale}
-          icon={<ArrowUp size={18} />} tone="owed"
-          foot={totals.owed > 0.01
-            ? <FlowPills ids={(settlement?.flows || []).filter(f => f.to.user_id === me).map(f => f.from.user_id)} lead={t('costs.from')} Avatar={Avatar} name={personName} />
-            : <span className="text-content-faint">{t('costs.nothingOwed')}</span>} />
+      {/* ── Primary summary: total spend + cost per traveler ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 16, marginBottom: 20 }} className="costs-summary">
         <SummaryCard label={t('costs.totalSpend')} sub={t('costs.totalSpendSub')} amount={totals.totalSpend} currency={base} locale={locale}
           icon={<BarChart3 size={18} />} tone="total"
           foot={<span style={{ display: 'flex', gap: 16 }}><span>{t('costs.yourShare')} · <b>{fmt0(totals.myShare)}</b></span><span>{t('costs.youPaid')} · <b>{fmt0(totals.myPaid)}</b></span></span>} />
+        <div className={cardCls} style={{ borderRadius: 22, padding: '22px 26px' }}>
+          <div className={labelCls} style={{ marginBottom: 16 }}>{t('costs.costPerTraveler')}</div>
+          <TravelerCostList rows={perTravelerTotals} />
+        </div>
+      </div>
+
+      {/* ── Secondary: settle up (who owes whom) — collapsed by default ── */}
+      <div style={{ marginBottom: 36 }}>
+        <button onClick={() => setShowSettleUp(v => !v)}
+          className="text-content-muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, padding: '4px 2px' }}>
+          <ArrowLeftRight size={14} />
+          {showSettleUp ? t('costs.settleUpToggleHide') : t('costs.settleUpToggleShow')}
+        </button>
+        {showSettleUp && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 12 }} className="costs-summary">
+            <SummaryCard label={t('costs.youOwe')} sub={t('costs.youOweSub')} amount={totals.owe} currency={base} locale={locale}
+              icon={<ArrowDown size={18} />} tone="owe"
+              foot={totals.owe > 0.01
+                ? <FlowPills ids={(settlement?.flows || []).filter(f => f.from.user_id === me).map(f => f.to.user_id)} lead={t('costs.to')} Avatar={Avatar} name={personName} />
+                : <span className="text-content-faint">{t('costs.allSettled')}</span>} />
+            <SummaryCard label={t('costs.youreOwed')} sub={t('costs.youreOwedSub')} amount={totals.owed} currency={base} locale={locale}
+              icon={<ArrowUp size={18} />} tone="owed"
+              foot={totals.owed > 0.01
+                ? <FlowPills ids={(settlement?.flows || []).filter(f => f.to.user_id === me).map(f => f.from.user_id)} lead={t('costs.from')} Avatar={Avatar} name={personName} />
+                : <span className="text-content-faint">{t('costs.nothingOwed')}</span>} />
+          </div>
+        )}
       </div>
 
       {/* ── Main grid ── */}
@@ -523,6 +580,7 @@ export default function CostsPanel({ tripId, tripMembers = [] }: CostsPanelProps
     const cur = curOf(e)
     const payers = (e.payers || []).filter(p => p.amount > 0)
     const net = round2(myPaidOf(e) - myShareOf(e))
+    const travelerMembers = (e.members || []).filter((m: any) => m.traveler_id)
     // "Unfinished": a recorded total nobody has paid yet — counts toward the trip
     // total but stays out of settlements until who-paid is filled in.
     const isUnfinished = baseTotal(e) > 0 && payers.length === 0
@@ -546,12 +604,26 @@ export default function CostsPanel({ tripId, tripMembers = [] }: CostsPanelProps
           </div>
           {payers.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 5 }}>
-              {payers.map(p => (
-                <span key={p.user_id} className="bg-surface-secondary border border-edge" title={personName(p.user_id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px 3px 3px', borderRadius: 999, fontSize: 11.5 }}>
-                  <Avatar id={p.user_id} size={18} />
+              {payers.map((p, i) => (
+                <span key={p.traveler_id ?? `u${p.user_id}-${i}`} className="bg-surface-secondary border border-edge" title={payerName(p)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px 3px 3px', borderRadius: 999, fontSize: 11.5 }}>
+                  <PayerAvatar payer={p} size={18} />
                   <span className="text-content" style={{ fontWeight: 700 }}>{fmt(convert(p.amount, cur))}</span>
                 </span>
               ))}
+            </div>
+          )}
+          {travelerMembers.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}>
+              {travelerMembers.map((m: any) => {
+                const tr = tripTravelers.find(t => t.id === m.traveler_id)
+                if (!tr) return null
+                return (
+                  <span key={`t${m.traveler_id}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px 2px 3px', borderRadius: 999, fontSize: 11, background: 'var(--bg-hover)', border: '1px solid var(--border-faint)' }}>
+                    <TravelerAvatar traveler={tr} size={14} />
+                    <span className="text-content-faint">{tr.name}</span>
+                  </span>
+                )
+              })}
             </div>
           )}
           {!isMobile && (
@@ -602,6 +674,30 @@ export default function CostsPanel({ tripId, tripMembers = [] }: CostsPanelProps
             </div>
           )}
         </div>
+      </div>
+    )
+  }
+
+  function TravelerCostList({ rows }: { rows: { traveler: TripTraveler; total: number }[] }) {
+    if (rows.length === 0) return <div className="text-content-faint" style={{ fontSize: 12.5 }}>{t('costs.noTravelerCosts')}</div>
+    const max = Math.max(1, ...rows.map(r => r.total))
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {rows.map(r => {
+          const pct = Math.min(100, r.total / max * 100)
+          return (
+            <div key={r.traveler.id} style={{ display: 'grid', gridTemplateColumns: '28px 1fr auto', gap: 10, alignItems: 'center' }}>
+              <TravelerAvatar traveler={r.traveler} size={28} />
+              <div>
+                <div className="text-content" style={{ fontSize: 13, fontWeight: 600 }}>{r.traveler.name}</div>
+                <div className="bg-surface-secondary" style={{ height: 5, borderRadius: 3, marginTop: 5, overflow: 'hidden' }}>
+                  <span style={{ display: 'block', height: '100%', width: pct + '%', background: r.traveler.color || '#6366f1', borderRadius: 3 }} />
+                </div>
+              </div>
+              <div className="text-content" style={{ fontSize: 13, fontWeight: 600, textAlign: 'right' }}>{fmt(r.total)}</div>
+            </div>
+          )
+        })}
       </div>
     )
   }
@@ -783,34 +879,73 @@ export function ExpenseModal({ tripId, base, people, me, editing, prefill, onClo
   const { t, locale } = useTranslation()
   const toast = useToast()
   const { addBudgetItem, updateBudgetItem } = useTripStore()
+  const tripTravelers = useTripStore(s => s.tripTravelers)
   const { convert } = useExchangeRates(base)
   const sym = (c: string) => SYMBOLS[c] || (c + ' ')
+
+  // Maps a traveler to the effective payer user_id for backend settlement math —
+  // unlinked travelers (no account of their own) settle under the account that
+  // manages them, since budget_item_payers.user_id has no traveler_id fallback.
+  const travelerUserId = (traveler: TripTraveler): number =>
+    traveler.linked_user_id ?? traveler.managed_by_user_id
+
+  // For DISPLAY only: whether a traveler is literally the logged-in user's own
+  // linked profile — never fall back to managed_by_user_id here, or every
+  // traveler managed by the current user (e.g. their kids) would wrongly show
+  // "You" instead of their own name (#reported bug).
+  const isSelfTraveler = (traveler: TripTraveler): boolean => traveler.linked_user_id === me
 
   const [name, setName] = useState(editing?.name || prefill?.name || '')
   const [cat, setCat] = useState<string>(editing ? catMeta(editing.category).key : (prefill?.category || 'food'))
   const [currency, setCurrency] = useState((editing?.currency || base).toUpperCase())
   const [day, setDay] = useState(editing?.expense_date || new Date().toISOString().slice(0, 10))
-  // One participant list: a person is "in" the split and may have paid an amount.
+  // One participant list: a traveler is "in" the split and may have paid an amount.
   // Entering the total auto-distributes it equally across the non-pinned participants;
   // touching an amount pins it and the rest rebalance so the paid amounts always sum
   // back to the total. Leaving every amount blank = an unfinished expense (counts
   // toward the trip total only, never settlements, until who-paid is filled in).
+  // Participants and paid amounts are keyed by traveler.id; mapped to user_id on save.
   const [total, setTotal] = useState<string>(() => {
     if (editing) return editing.total_price ? String(editing.total_price) : ''
     if (prefill?.amount != null) return String(prefill.amount)
     return ''
   })
-  const [participants, setParticipants] = useState<Set<number>>(() =>
-    editing ? new Set((editing.members || []).map(m => m.user_id)) : new Set(people.map(p => p.id)))
+  // Resolves a stored member/payer row to its traveler.id: prefer the row's own
+  // traveler_id (reliable, set for every row written since the traveler_id columns
+  // were added); fall back to the user_id reverse-lookup only for legacy rows
+  // written before that (where multiple travelers sharing a user_id is ambiguous).
+  const travelerIdOf = (row: { user_id: number; traveler_id?: number | null }): number | undefined => {
+    if (row.traveler_id != null) return row.traveler_id
+    return tripTravelers.find(t => travelerUserId(t) === row.user_id)?.id
+  }
+
+  const [participants, setParticipants] = useState<Set<number>>(() => {
+    if (editing) {
+      const ids = (editing.members || []).map(travelerIdOf).filter((id): id is number => id !== undefined)
+      return new Set(ids)
+    }
+    return new Set(tripTravelers.map(t => t.id))
+  })
   const [paid, setPaid] = useState<Record<number, string>>(() => {
     const m: Record<number, string> = {}
-    for (const p of editing?.payers || []) if (p.amount > 0) m[p.user_id] = String(p.amount)
+    for (const payer of editing?.payers || []) {
+      if (payer.amount > 0) {
+        const tId = travelerIdOf(payer)
+        if (tId !== undefined) m[tId] = String(payer.amount)
+      }
+    }
     return m
   })
   // Amounts the user pinned by typing — kept out of the auto-rebalance. Existing
   // payer amounts load as pinned so opening an expense never reshuffles them.
-  const [dirty, setDirty] = useState<Set<number>>(() =>
-    new Set((editing?.payers || []).filter(p => p.amount > 0).map(p => p.user_id)))
+  const [dirty, setDirty] = useState<Set<number>>(() => {
+    const pinned = new Set<number>()
+    for (const payer of (editing?.payers || []).filter(p => p.amount > 0)) {
+      const tId = travelerIdOf(payer)
+      if (tId !== undefined) pinned.add(tId)
+    }
+    return pinned
+  })
   const [saving, setSaving] = useState(false)
 
   const totalNum = parseFloat(total) || 0
@@ -864,15 +999,27 @@ export function ExpenseModal({ tripId, base, people, me, editing, prefill, onClo
   const save = async () => {
     if (!valid) return
     setSaving(true)
-    const payerList = [...participants]
-      .map(id => ({ user_id: id, amount: parseFloat(paid[id]) || 0 }))
-      .filter(p => p.amount > 0)
+    // Each participating traveler is its own payer row (traveler_id disambiguates
+    // several unlinked travelers — e.g. a parent's kids — sharing one user_id).
+    const payerList: { user_id: number; traveler_id: number; amount: number }[] = []
+    for (const tId of participants) {
+      const traveler = tripTravelers.find(t => t.id === tId)
+      if (!traveler) continue
+      const uid = travelerUserId(traveler)
+      if (uid === null) continue
+      const amt = parseFloat(paid[tId]) || 0
+      if (amt > 0) payerList.push({ user_id: uid, traveler_id: tId, amount: amt })
+    }
+    const memberUserIds = [...new Set([...participants].map(tId => {
+      const traveler = tripTravelers.find(t => t.id === tId)
+      return traveler ? travelerUserId(traveler) : null
+    }).filter((uid): uid is number => uid !== null))]
     const data = {
       name: name.trim(), category: cat,
       // Store the actual currency the amounts were entered in; conversion to the
       // viewer's display currency happens live (real rates), no manual rate.
       currency,
-      payers: payerList, member_ids: [...participants],
+      payers: payerList, member_ids: memberUserIds,
       expense_date: day || null,
       // Always record the entered total: the server keeps it as-is for an unfinished
       // expense (no payers) and otherwise re-derives it from the payer sum (== total).
@@ -955,25 +1102,28 @@ export function ExpenseModal({ tripId, base, people, me, editing, prefill, onClo
         <div>
           <label className={labelCls}>{t('costs.whoPaid')}</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {people.map((p, idx) => {
-              const on = participants.has(p.id)
+            {tripTravelers.map((traveler, idx) => {
+              const on = participants.has(traveler.id)
+              const isMe = isSelfTraveler(traveler)
               return (
-                <div key={p.id} className="bg-surface-secondary border border-edge" style={{ display: 'grid', gridTemplateColumns: '1fr 130px', gap: 10, alignItems: 'center', padding: '8px 11px', borderRadius: 10, opacity: on ? 1 : 0.5 }}>
-                  <button onClick={() => toggleParticipant(p.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'inherit', padding: 0, minWidth: 0, textAlign: 'left' }}>
-                    {p.avatar_url
-                      ? <img src={p.avatar_url} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', display: 'block', flexShrink: 0, opacity: on ? 1 : 0.45 }} />
-                      : <span style={{ width: 22, height: 22, borderRadius: '50%', background: SPLIT_COLORS[idx % SPLIT_COLORS.length].gradient, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 9, fontWeight: 700, flexShrink: 0, opacity: on ? 1 : 0.45 }}>{(p.id === me ? t('costs.youShort') : p.username.charAt(0)).toUpperCase()}</span>}
-                    <span className="text-content" style={{ fontSize: 14, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.id === me ? t('costs.you') : p.username}</span>
+                <div key={traveler.id} className="bg-surface-secondary border border-edge" style={{ display: 'grid', gridTemplateColumns: '1fr 130px', gap: 10, alignItems: 'center', padding: '8px 11px', borderRadius: 10, opacity: on ? 1 : 0.5 }}>
+                  <button onClick={() => toggleParticipant(traveler.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 0, cursor: 'pointer', fontFamily: 'inherit', padding: 0, minWidth: 0, textAlign: 'left' }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: '50%', flexShrink: 0, opacity: on ? 1 : 0.45,
+                      background: traveler.color || SPLIT_COLORS[idx % SPLIT_COLORS.length].gradient,
+                      display: 'grid', placeItems: 'center', fontSize: 9, fontWeight: 700, color: '#fff',
+                    }}>{(isMe ? t('costs.youShort') : traveler.name.charAt(0)).toUpperCase()}</span>
+                    <span className="text-content" style={{ fontSize: 14, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{isMe ? t('costs.you') : traveler.name}</span>
                   </button>
                   {on ? (
                     <div className="bg-surface-input border border-edge" style={{ display: 'flex', alignItems: 'center', gap: 4, borderRadius: 8, padding: '0 10px' }}>
                       <span className="text-content-faint" style={{ fontSize: 13 }}>{sym(currency)}</span>
-                      <input type="text" inputMode="decimal" placeholder="0.00" value={paid[p.id] || ''}
-                        onChange={e => onPaidChange(p.id, e.target.value)}
+                      <input type="text" inputMode="decimal" placeholder="0.00" value={paid[traveler.id] || ''}
+                        onChange={e => onPaidChange(traveler.id, e.target.value)}
                         className="text-content" style={{ width: '100%', border: 0, background: 'none', outline: 'none', fontSize: 14, fontWeight: 600, padding: '8px 0', textAlign: 'right' }} />
                     </div>
                   ) : (
-                    <button onClick={() => toggleParticipant(p.id)} className="text-content-faint" style={{ background: 'none', border: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, textAlign: 'right' }}>{t('costs.tapToInclude')}</button>
+                    <button onClick={() => toggleParticipant(traveler.id)} className="text-content-faint" style={{ background: 'none', border: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, textAlign: 'right' }}>{t('costs.tapToInclude')}</button>
                   )}
                 </div>
               )

@@ -2,13 +2,16 @@ import {
   X, Check, CheckCheck, Luggage, Package, FolderPlus, Upload,
 } from 'lucide-react'
 import type { PackingState } from './usePackingListPanel'
+import { TravelerAvatar } from '../Travelers/TravelerAvatar'
 
 export function PackingHeader(S: PackingState) {
   const {
     inlineHeader, t, items, abgehakt, fortschritt, canEdit, isAdmin,
     showSaveTemplate, saveTemplateName, setSaveTemplateName, handleSaveAsTemplate, setShowSaveTemplate,
     setShowImportModal, handleClearChecked, availableTemplates, templateDropdownRef,
-    showTemplateDropdown, setShowTemplateDropdown, applyingTemplate, handleApplyTemplate,
+    showTemplateDropdown, setShowTemplateDropdown, applyingTemplate,
+    handleOpenTemplatePicker, pendingTemplateId, setPendingTemplateId,
+    templateTravelerIds, toggleTemplateTraveler, handleConfirmTemplateApply, tripTravelers,
     bagTrackingEnabled, showBagModal, setShowBagModal,
     addingCategory, newCatName, setNewCatName, handleAddNewCategory, setAddingCategory,
   } = S
@@ -76,7 +79,7 @@ export function PackingHeader(S: PackingState) {
                   boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: 4, minWidth: 200,
                 }}>
                   {availableTemplates.map(tmpl => (
-                    <button key={tmpl.id} onClick={() => handleApplyTemplate(tmpl.id)}
+                    <button key={tmpl.id} onClick={() => handleOpenTemplatePicker(tmpl.id)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 8, width: '100%',
                         padding: '8px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -184,6 +187,36 @@ export function PackingHeader(S: PackingState) {
                 }} />
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Template traveler picker (Issue 8) */}
+      {pendingTemplateId !== null && tripTravelers.length > 0 && (
+        <div style={{ marginTop: 10, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border-primary)', background: 'var(--bg-tertiary)' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 8 }}>{t('packing.templateForTravelers')}</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+            {tripTravelers.map(tr => {
+              const sel = templateTravelerIds.includes(tr.id)
+              return (
+                <button key={tr.id} onClick={() => toggleTemplateTraveler(tr.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px 4px 6px', borderRadius: 99, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit', background: sel ? (tr.color || '#6366f1') : 'transparent', borderColor: sel ? (tr.color || '#6366f1') : 'var(--border-primary)', color: sel ? '#fff' : 'var(--text-muted)', transition: 'all 0.15s' }}>
+                  <TravelerAvatar traveler={tr} size={16} />
+                  {tr.name}
+                </button>
+              )
+            })}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 10 }}>
+            {templateTravelerIds.length === 0 ? t('packing.templateForAll') : `${templateTravelerIds.length} traveler(s) selected — list copied per traveler`}
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={handleConfirmTemplateApply} disabled={applyingTemplate} style={{ padding: '6px 14px', borderRadius: 99, border: 'none', background: 'var(--text-primary)', color: 'var(--bg-primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', opacity: applyingTemplate ? 0.6 : 1 }}>
+              {applyingTemplate ? '…' : t('packing.applyTemplate')}
+            </button>
+            <button onClick={() => setPendingTemplateId(null)} style={{ padding: '6px 14px', borderRadius: 99, border: '1px solid var(--border-primary)', background: 'none', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-muted)' }}>
+              {t('travelers.cancel')}
+            </button>
           </div>
         </div>
       )}

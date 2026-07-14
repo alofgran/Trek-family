@@ -16,6 +16,7 @@ import { registerTripTools } from './tools/trips';
 import { registerTransportTools } from './tools/transports';
 import { registerVacayTools } from './tools/vacay';
 import { registerMcpPrompts } from './tools/prompts';
+import { registerTravelerTools } from './tools/travelers';
 
 export function registerTools(server: McpServer, userId: number, scopes: string[] | null, isStaticToken = false, getDeprecationNotice: () => string | null = () => null): void {
   registerTripTools(server, userId, scopes, getDeprecationNotice);
@@ -49,6 +50,8 @@ export function registerTools(server: McpServer, userId: number, scopes: string[
   registerVacayTools(server, userId, scopes);
 
   registerTodoTools(server, userId, scopes);
+
+  registerTravelerTools(server, userId, scopes);
 
   registerMcpPrompts(server, userId, isStaticToken);
 }

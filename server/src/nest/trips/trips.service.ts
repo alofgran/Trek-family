@@ -11,6 +11,7 @@ import { listItems as listTodoItems } from '../../services/todoService';
 import { listBudgetItems } from '../../services/budgetService';
 import { listReservations } from '../../services/reservationService';
 import { listFiles } from '../../services/fileService';
+import { getTripReadiness } from '../../services/tripReadinessService';
 
 /**
  * Thin Nest wrapper around the existing trip service + the per-domain list
@@ -23,6 +24,10 @@ import { listFiles } from '../../services/fileService';
 export class TripsService {
   canAccessTrip(tripId: string, userId: number) {
     return canAccessTrip(tripId, userId) as { user_id: number } | null | undefined;
+  }
+
+  getReadiness(tripId: string) {
+    return getTripReadiness(tripId);
   }
 
   can(action: string, role: string, ownerId: number | null, userId: number, isMember: boolean): boolean {

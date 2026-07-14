@@ -36,7 +36,8 @@ import { OidcModule } from './oidc/oidc.module';
 import { OauthModule } from './oauth/oauth.module';
 import { AdminModule } from './admin/admin.module';
 import { AddonsModule } from './addons/addons.module';
-import { TrekExceptionFilter } from './common/trek-exception.filter';
+import { TravelersModule } from './travelers/travelers.module';
+import { TrekFamilyExceptionFilter } from './common/trek-family-exception.filter';
 import { SpaFallbackFilter } from './platform/spa-fallback.filter';
 import { IdempotencyInterceptor } from './common/idempotency.interceptor';
 
@@ -46,16 +47,16 @@ import { IdempotencyInterceptor } from './common/idempotency.interceptor';
  * migrated.
  */
 @Module({
-  imports: [DatabaseModule, WeatherModule, AirportsModule, ConfigModule, SystemNoticesModule, MapsModule, CategoriesModule, TagsModule, NotificationsModule, AtlasModule, VacayModule, PackingModule, TodoModule, BudgetModule, ReservationsModule, DaysModule, AssignmentsModule, PlacesModule, TripsModule, CollabModule, FilesModule, PhotosModule, MemoriesModule, AirtrailModule, JourneyModule, ShareModule, SettingsModule, BackupModule, AuthModule, OidcModule, OauthModule, AdminModule, AddonsModule, BookingImportModule],
+  imports: [DatabaseModule, WeatherModule, AirportsModule, ConfigModule, SystemNoticesModule, MapsModule, CategoriesModule, TagsModule, NotificationsModule, AtlasModule, VacayModule, PackingModule, TodoModule, BudgetModule, ReservationsModule, DaysModule, AssignmentsModule, PlacesModule, TripsModule, CollabModule, FilesModule, PhotosModule, MemoriesModule, AirtrailModule, JourneyModule, ShareModule, SettingsModule, BackupModule, AuthModule, OidcModule, OauthModule, AdminModule, AddonsModule, BookingImportModule, TravelersModule],
   controllers: [HealthController],
   providers: [
     HealthService,
     // Global error-envelope normaliser (DI-registered so it also catches
     // framework-level exceptions like the not-found handler).
-    { provide: APP_FILTER, useClass: TrekExceptionFilter },
+    { provide: APP_FILTER, useClass: TrekFamilyExceptionFilter },
     // SPA fallback: serves index.html for unmatched GETs in production (the Nest
     // equivalent of the legacy Express app.get('*') catch-all). @Catch(NotFoundException)
-    // is more specific than TrekExceptionFilter, so Nest routes 404s here.
+    // is more specific than TrekFamilyExceptionFilter, so Nest routes 404s here.
     { provide: APP_FILTER, useClass: SpaFallbackFilter },
     // Replays the X-Idempotency-Key the client sends on every write, matching
     // the legacy applyIdempotency middleware so retried mutations don't double-apply.

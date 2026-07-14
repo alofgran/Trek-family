@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const de: NotificationLocale = {
   email: {
-    footer: 'Du erhältst diese E-Mail, weil du Benachrichtigungen in TREK aktiviert hast.',
+    footer: 'Du erhältst diese E-Mail, weil du Benachrichtigungen in TREK FAMILY aktiviert hast.',
     manage: 'Einstellungen verwalten',
     madeWith: 'Made with',
-    openTrek: 'TREK öffnen',
+    openTrek: 'TREK FAMILY öffnen',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const de: NotificationLocale = {
       title: `Aufgabe fällig: ${p.todo}`,
       body: `"${p.todo}" in "${p.trip}" ist am ${p.due} fällig.`,
     }),
+    document_expiry: (p) => ({
+      title: `Dokument läuft bald ab: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} für "${p.trip}" läuft am ${p.expiry} ab.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Reisender könnte in neue Altersgruppe gewechselt sein: ${p.traveler}`,
+      body: `${p.traveler} ist jetzt alt genug für ${p.newType} statt ${p.oldType}. Bei Bedarf in den Einstellungen aktualisieren.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Fehlende Transportbuchung: ${p.trip}`,
+      body: `${p.travelers} haben möglicherweise noch kein Transportmittel für "${p.trip}" gebucht.`,
+    }),
     vacay_invite: (p) => ({
       title: 'Vacay Fusion-Einladung',
-      body: `${p.actor} hat dich eingeladen, Urlaubspläne zu fusionieren. Öffne TREK um anzunehmen oder abzulehnen.`,
+      body: `${p.actor} hat dich eingeladen, Urlaubspläne zu fusionieren. Öffne TREK FAMILY um anzunehmen oder abzulehnen.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} Fotos geteilt`,
@@ -52,7 +64,7 @@ const de: NotificationLocale = {
   passwordReset: {
     subject: 'Passwort zurücksetzen',
     greeting: 'Hallo',
-    body: 'Wir haben eine Anfrage erhalten, das Passwort für dein TREK-Konto zurückzusetzen. Klicke auf den Button unten, um ein neues Passwort festzulegen.',
+    body: 'Wir haben eine Anfrage erhalten, das Passwort für dein TREK FAMILY-Konto zurückzusetzen. Klicke auf den Button unten, um ein neues Passwort festzulegen.',
     ctaIntro: 'Passwort zurücksetzen',
     expiry: 'Dieser Link ist 60 Minuten gültig.',
     ignore: 'Wenn du das nicht warst, ignoriere diese E-Mail — dein Passwort bleibt unverändert.',

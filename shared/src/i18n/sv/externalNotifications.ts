@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const en: NotificationLocale = {
   email: {
-    footer: 'Du har fått detta eftersom du har aktiverat aviseringar i TREK.',
+    footer: 'Du har fått detta eftersom du har aktiverat aviseringar i TREK FAMILY.',
     manage: 'Hantera egenskaper under Inställningar',
     madeWith: 'Gjorde med',
-    openTrek: 'Öppna TREK',
+    openTrek: 'Öppna TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const en: NotificationLocale = {
       title: `Uppgift förfaller: ${p.todo}`,
       body: `"${p.todo}" i "${p.trip}" förfaller den ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Dokument går snart ut: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} för "${p.trip}" går ut den ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Resenären kan ha vuxit in i en ny åldersgrupp: ${p.traveler}`,
+      body: `${p.traveler} är nu tillräckligt gammal för att vara ${p.newType} istället för ${p.oldType}. Uppdatera i Inställningar om det stämmer.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Saknad transportbokning: ${p.trip}`,
+      body: `${p.travelers} kanske inte har bokat transport än för "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Vacay sammanslagnings inbjudan',
-      body: `${p.actor} bjöd in dig att slå samman semesterplaner. Öppna TREK för att acceptera eller avvisa.`,
+      body: `${p.actor} bjöd in dig att slå samman semesterplaner. Öppna TREK FAMILY för att acceptera eller avvisa.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} foton delade`,
@@ -52,7 +64,7 @@ const en: NotificationLocale = {
   passwordReset: {
     subject: 'Återställ ditt lösenord',
     greeting: 'Hej',
-    body: 'Vi har fått en begäran om att återställa lösenordet till ditt TREK konto. Klicka på knappen nedan för att ange ett nytt lösenord.',
+    body: 'Vi har fått en begäran om att återställa lösenordet till ditt TREK FAMILY konto. Klicka på knappen nedan för att ange ett nytt lösenord.',
     ctaIntro: 'Återställ lösenord',
     expiry: 'Den här länken upphör att gälla om 60 minuter.',
     ignore: "Om du inte har begärt detta kan du lugnt strunta i det här e-postmeddelandet – ditt lösenord kommer inte att ändras.",

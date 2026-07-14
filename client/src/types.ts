@@ -1,6 +1,6 @@
 // Shared types for the TREK travel planner.
 //
-// Domain entity/response types are now sourced from @trek/shared — the single
+// Domain entity/response types are now sourced from @trek-family/shared — the single
 // source of truth shared with the server. The Zod schemas there are built to
 // match the REAL server response shapes (see shared/src/<domain>/*.schema.ts,
 // each documented against the producing service). Re-exported here so the rest
@@ -20,12 +20,15 @@ import type {
   PackingBagMember,
   BudgetItem,
   BudgetItemMember,
+  BudgetItemPayer,
   Reservation,
   ReservationEndpoint,
   Accommodation,
   Tag,
   Category,
-} from '@trek/shared'
+  Traveler,
+  TripTraveler,
+} from '@trek-family/shared'
 
 export type {
   Trip,
@@ -42,11 +45,14 @@ export type {
   PackingBagMember,
   BudgetItem,
   BudgetItemMember,
+  BudgetItemPayer,
   Reservation,
   ReservationEndpoint,
   Accommodation,
   Tag,
   Category,
+  Traveler,
+  TripTraveler,
 }
 
 export interface User {
@@ -73,6 +79,9 @@ export interface TodoItem {
   due_date: string | null
   description: string | null
   assigned_user_id: number | null
+  assigned_traveler_id?: number | null
+  traveler_name?: string | null
+  traveler_avatar?: string | null
   priority: number
 }
 
@@ -85,6 +94,13 @@ export interface TripFile {
   uploaded_by?: number | null
   uploaded_by_name?: string | null
   uploaded_by_avatar?: string | null
+  traveler_id?: number | null
+  traveler_name?: string | null
+  traveler_avatar?: string | null
+  traveler_color?: string | null
+  expiry_date?: string | null
+  document_type?: string | null
+  extracted_data?: string | null
   filename: string
   original_name: string
   file_size?: number | null

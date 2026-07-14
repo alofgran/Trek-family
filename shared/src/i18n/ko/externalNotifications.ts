@@ -5,7 +5,7 @@ const ko: NotificationLocale = {
     footer: 'TREK에서 알림을 활성화했기 때문에 이 이메일을 받으셨습니다.',
     manage: '설정에서 환경설정 관리',
     madeWith: 'Made with',
-    openTrek: 'TREK 열기',
+    openTrek: 'TREK FAMILY 열기',
   },
   events: {
     trip_invite: (p) => ({
@@ -23,6 +23,18 @@ const ko: NotificationLocale = {
     todo_due: (p) => ({
       title: `할 일 마감: ${p.todo}`,
       body: `"${p.trip}"의 "${p.todo}"은(는) ${p.due}에 마감됩니다.`,
+    }),
+    document_expiry: (p) => ({
+      title: `곧 만료되는 문서: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}"${p.trip}"의 ${p.documentType}이(가) ${p.expiry}에 만료됩니다.`,
+    }),
+    age_band_update: (p) => ({
+      title: `여행자가 새로운 연령대에 접어들었을 수 있습니다: ${p.traveler}`,
+      body: `${p.traveler}님은 이제 ${p.oldType} 대신 ${p.newType}이(가) 될 만큼 나이가 들었습니다. 맞다면 설정에서 업데이트하세요.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `교통편 예약 누락: ${p.trip}`,
+      body: `${p.travelers}은(는) "${p.trip}"의 교통편을 아직 예약하지 않았을 수 있습니다.`,
     }),
     vacay_invite: (p) => ({
       title: 'Vacay Fusion 초대',
@@ -52,7 +64,7 @@ const ko: NotificationLocale = {
   passwordReset: {
     subject: '비밀번호 재설정',
     greeting: '안녕하세요',
-    body: 'TREK 계정 비밀번호 재설정 요청을 받았습니다. 아래 버튼을 클릭하여 새 비밀번호를 설정하세요.',
+    body: 'TREK FAMILY 계정 비밀번호 재설정 요청을 받았습니다. 아래 버튼을 클릭하여 새 비밀번호를 설정하세요.',
     ctaIntro: '비밀번호 재설정',
     expiry: '이 링크는 60분 후에 만료됩니다.',
     ignore: '본인이 요청하지 않으셨다면 이 이메일을 무시하셔도 됩니다 — 비밀번호는 변경되지 않습니다.',

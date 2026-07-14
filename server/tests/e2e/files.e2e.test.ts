@@ -49,7 +49,7 @@ vi.mock('../../src/services/memories/helpersService', () => helperSvc);
 
 import { FilesModule } from '../../src/nest/files/files.module';
 import { PhotosModule } from '../../src/nest/photos/photos.module';
-import { TrekExceptionFilter } from '../../src/nest/common/trek-exception.filter';
+import { TrekFamilyExceptionFilter } from '../../src/nest/common/trek-family-exception.filter';
 
 describe('Files + photos e2e (real auth guard + temp SQLite)', () => {
   let server: Server;
@@ -59,7 +59,7 @@ describe('Files + photos e2e (real auth guard + temp SQLite)', () => {
     const moduleRef = await Test.createTestingModule({ imports: [FilesModule, PhotosModule] }).compile();
     const nest = moduleRef.createNestApplication();
     nest.use(cookieParser());
-    nest.useGlobalFilters(new TrekExceptionFilter());
+    nest.useGlobalFilters(new TrekFamilyExceptionFilter());
     await nest.init();
     return nest;
   }

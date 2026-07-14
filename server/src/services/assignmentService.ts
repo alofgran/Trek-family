@@ -26,9 +26,11 @@ export function getAssignmentWithPlace(assignmentId: number | bigint) {
   `).all(a.place_id);
 
   const participants = db.prepare(`
-    SELECT ap.user_id, u.username, u.avatar
+    SELECT ap.user_id, ap.traveler_id, u.username, u.avatar,
+           t.name as traveler_name, t.avatar as traveler_avatar
     FROM assignment_participants ap
-    JOIN users u ON ap.user_id = u.id
+    LEFT JOIN users u ON ap.user_id = u.id
+    LEFT JOIN travelers t ON ap.traveler_id = t.id
     WHERE ap.assignment_id = ?
   `).all(a.id);
 
@@ -159,9 +161,11 @@ export function moveAssignment(id: string | number, newDayId: string | number, o
 
 export function getParticipants(assignmentId: string | number) {
   return db.prepare(`
-    SELECT ap.user_id, u.username, u.avatar
+    SELECT ap.user_id, ap.traveler_id, u.username, u.avatar,
+           t.name as traveler_name, t.avatar as traveler_avatar
     FROM assignment_participants ap
-    JOIN users u ON ap.user_id = u.id
+    LEFT JOIN users u ON ap.user_id = u.id
+    LEFT JOIN travelers t ON ap.traveler_id = t.id
     WHERE ap.assignment_id = ?
   `).all(assignmentId);
 }
@@ -200,17 +204,35 @@ export function updateTime(id: string | number, placeTime: string | null, endTim
   return getAssignmentWithPlace(Number(id));
 }
 
-export function setParticipants(assignmentId: string | number, userIds: number[]) {
+/**
+ * Set participants for an assignment.
+ * Accepts either a plain number[] (treated as user_id entries, legacy callers)
+ * or an object array with { user_id?, traveler_id? } entries.
+ */
+export function setParticipants(
+  assignmentId: string | number,
+  entries: number[] | { user_id?: number | null; traveler_id?: number | null }[]
+) {
   db.prepare('DELETE FROM assignment_participants WHERE assignment_id = ?').run(assignmentId);
-  if (userIds.length > 0) {
-    const insert = db.prepare('INSERT OR IGNORE INTO assignment_participants (assignment_id, user_id) VALUES (?, ?)');
-    for (const userId of userIds) insert.run(assignmentId, userId);
+
+  const normalized: { user_id: number | null; traveler_id: number | null }[] =
+    entries.length > 0 && typeof entries[0] === 'number'
+      ? (entries as number[]).map(uid => ({ user_id: uid, traveler_id: null }))
+      : (entries as { user_id?: number | null; traveler_id?: number | null }[]).map(e => ({
+          user_id: e.user_id ?? null,
+          traveler_id: e.traveler_id ?? null,
+        }));
+
+  if (normalized.length > 0) {
+    const insert = db.prepare(
+      'INSERT OR IGNORE INTO assignment_participants (assignment_id, user_id, traveler_id) VALUES (?, ?, ?)'
+    );
+    for (const e of normalized) {
+      if (e.user_id !== null || e.traveler_id !== null) {
+        insert.run(assignmentId, e.user_id, e.traveler_id);
+      }
+    }
   }
 
-  return db.prepare(`
-    SELECT ap.user_id, u.username, u.avatar
-    FROM assignment_participants ap
-    JOIN users u ON ap.user_id = u.id
-    WHERE ap.assignment_id = ?
-  `).all(assignmentId);
+  return getParticipants(assignmentId);
 }

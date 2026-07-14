@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react'
 import { useSettingsStore } from '../store/settingsStore'
-import en from '@trek/shared/i18n/en'
-import type { SupportedLanguageCode } from '@trek/shared'
+import en from '@trek-family/shared/i18n/en'
+import type { SupportedLanguageCode } from '@trek-family/shared'
 import {
   SUPPORTED_LANGUAGES,
   getLocaleForLanguage,
@@ -9,8 +9,8 @@ import {
   isRtlLanguage,
   escapeHtml,
   sanitizeInlineHtml,
-} from '@trek/shared'
-import type { TranslationStrings } from '@trek/shared/i18n'
+} from '@trek-family/shared'
+import type { TranslationStrings } from '@trek-family/shared/i18n'
 
 export { SUPPORTED_LANGUAGES }
 
@@ -18,26 +18,26 @@ export { SUPPORTED_LANGUAGES }
 // Only the active locale is fetched; en is always available synchronously as the fallback.
 const localeLoaders: Record<SupportedLanguageCode, () => Promise<{ default: TranslationStrings }>> = {
   en:      () => Promise.resolve({ default: en }),
-  de:      () => import('@trek/shared/i18n/de'),
-  es:      () => import('@trek/shared/i18n/es'),
-  fr:      () => import('@trek/shared/i18n/fr'),
-  hu:      () => import('@trek/shared/i18n/hu'),
-  it:      () => import('@trek/shared/i18n/it'),
-  tr:      () => import('@trek/shared/i18n/tr'),
-  ru:      () => import('@trek/shared/i18n/ru'),
-  zh:      () => import('@trek/shared/i18n/zh'),
-  'zh-TW': () => import('@trek/shared/i18n/zh-TW'),
-  nl:      () => import('@trek/shared/i18n/nl'),
-  id:      () => import('@trek/shared/i18n/id'),
-  ar:      () => import('@trek/shared/i18n/ar'),
-  br:      () => import('@trek/shared/i18n/br'),
-  cs:      () => import('@trek/shared/i18n/cs'),
-  pl:      () => import('@trek/shared/i18n/pl'),
-  ja:      () => import('@trek/shared/i18n/ja'),
-  ko:      () => import('@trek/shared/i18n/ko'),
-  uk:      () => import('@trek/shared/i18n/uk'),
-  gr:      () => import('@trek/shared/i18n/gr'),
-  sv:      () => import('@trek/shared/i18n/sv'),
+  de:      () => import('@trek-family/shared/i18n/de'),
+  es:      () => import('@trek-family/shared/i18n/es'),
+  fr:      () => import('@trek-family/shared/i18n/fr'),
+  hu:      () => import('@trek-family/shared/i18n/hu'),
+  it:      () => import('@trek-family/shared/i18n/it'),
+  tr:      () => import('@trek-family/shared/i18n/tr'),
+  ru:      () => import('@trek-family/shared/i18n/ru'),
+  zh:      () => import('@trek-family/shared/i18n/zh'),
+  'zh-TW': () => import('@trek-family/shared/i18n/zh-TW'),
+  nl:      () => import('@trek-family/shared/i18n/nl'),
+  id:      () => import('@trek-family/shared/i18n/id'),
+  ar:      () => import('@trek-family/shared/i18n/ar'),
+  br:      () => import('@trek-family/shared/i18n/br'),
+  cs:      () => import('@trek-family/shared/i18n/cs'),
+  pl:      () => import('@trek-family/shared/i18n/pl'),
+  ja:      () => import('@trek-family/shared/i18n/ja'),
+  ko:      () => import('@trek-family/shared/i18n/ko'),
+  uk:      () => import('@trek-family/shared/i18n/uk'),
+  gr:      () => import('@trek-family/shared/i18n/gr'),
+  sv:      () => import('@trek-family/shared/i18n/sv'),
 }
 
 // Re-export pure helpers that live in shared so downstream consumers can import them

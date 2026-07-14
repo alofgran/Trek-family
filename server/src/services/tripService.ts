@@ -8,6 +8,7 @@ import { listItems as listPackingItems } from './packingService';
 import { listReservations, loadEndpointsByTrip, resyncReservationDays } from './reservationService';
 import { listNotes as listCollabNotes } from './collabService';
 import { shiftOwnerEntriesForTripWindow } from './vacayService';
+import { getOrCreateLinkedTraveler, addTravelerToTrip } from './travelerService';
 
 export const MS_PER_DAY = 86400000;
 export const MAX_TRIP_DAYS = 365;
@@ -18,7 +19,8 @@ export const TRIP_SELECT = `
     (SELECT COUNT(*) FROM places p WHERE p.trip_id = t.id) as place_count,
     CASE WHEN t.user_id = :userId THEN 1 ELSE 0 END as is_owner,
     u.username as owner_username,
-    (SELECT COUNT(*) FROM trip_members tm WHERE tm.trip_id = t.id) as shared_count
+    (SELECT COUNT(*) FROM trip_members tm WHERE tm.trip_id = t.id) as shared_count,
+    (SELECT COUNT(*) FROM trip_travelers tt WHERE tt.trip_id = t.id) as traveler_count
   FROM trips t
   JOIN users u ON u.id = t.user_id
 `;
@@ -192,6 +194,12 @@ export function createTrip(userId: number, data: CreateTripData, maxDays?: numbe
   generateDays(tripId, data.start_date || null, data.end_date || null, maxDays, data.day_count);
 
   const trip = db.prepare(`${TRIP_SELECT} WHERE t.id = :tripId`).get({ userId, tripId });
+
+  try {
+    const traveler = getOrCreateLinkedTraveler(userId);
+    addTravelerToTrip(Number(tripId), traveler.id, userId);
+  } catch {}
+
   return { trip, tripId: Number(tripId), reminderDays: rd };
 }
 
@@ -390,6 +398,11 @@ export function addMember(tripId: string | number, identifier: string, tripOwner
 
   db.prepare('INSERT INTO trip_members (trip_id, user_id, invited_by) VALUES (?, ?, ?)').run(tripId, target.id, invitedByUserId);
 
+  try {
+    const traveler = getOrCreateLinkedTraveler(target.id);
+    addTravelerToTrip(tripId, traveler.id, invitedByUserId);
+  } catch {}
+
   const tripInfo = db.prepare('SELECT title FROM trips WHERE id = ?').get(tripId) as { title: string } | undefined;
 
   return {
@@ -437,8 +450,8 @@ export function exportICS(tripId: string | number): { ics: string; filename: str
     return d.replace(/[-:]/g, '');
   };
 
-  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//TREK//Travel Planner//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
-  ics += `X-WR-CALNAME:${esc(trip.title || 'TREK Trip')}\r\n`;
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//TREK FAMILY//Travel Planner//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\n';
+  ics += `X-WR-CALNAME:${esc(trip.title || 'TREK FAMILY Trip')}\r\n`;
 
   // Trip as all-day event
   if (trip.start_date && trip.end_date) {

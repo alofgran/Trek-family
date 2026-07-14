@@ -5,7 +5,9 @@ import { useTripStore } from '../../store/tripStore'
 import { useAddonStore } from '../../store/addonStore'
 import Modal from '../shared/Modal'
 import CustomSelect from '../shared/CustomSelect'
-import { Hotel, Utensils, Ticket, FileText, Users, Paperclip, X, ExternalLink, Link2 } from 'lucide-react'
+import { Hotel, Utensils, Ticket, FileText, Users, Paperclip, X, ExternalLink, Link2, Users2 } from 'lucide-react'
+import { travelersApi } from '../../api/client'
+import { TravelerSelector } from '../Travelers/TravelerSelector'
 import { useToast } from '../shared/Toast'
 import { useTranslation } from '../../i18n'
 import { CustomDatePicker } from '../shared/CustomDateTimePicker'
@@ -14,7 +16,7 @@ import { openFile } from '../../utils/fileDownload'
 import type { Day, Place, Reservation, TripFile, AssignmentsMap, Accommodation, BudgetItem } from '../../types'
 import { BookingCostsSection } from './BookingCostsSection'
 import type { BookingExpenseRequest } from './BookingCostsSection.types'
-import { typeToCostCategory } from '@trek/shared'
+import { typeToCostCategory } from '@trek-family/shared'
 
 const TYPE_OPTIONS = [
   { value: 'hotel',      labelKey: 'reservations.type.hotel',      Icon: Hotel },
@@ -90,11 +92,22 @@ export function ReservationModal({ isOpen, onClose, onSave, reservation, days, p
   const [pendingFiles, setPendingFiles] = useState([])
   const [showFilePicker, setShowFilePicker] = useState(false)
   const [linkedFileIds, setLinkedFileIds] = useState<number[]>([])
+  const [selectedTravelerIds, setSelectedTravelerIds] = useState<number[]>([])
 
   const assignmentOptions = useMemo(
     () => buildAssignmentOptions(days, assignments, t, locale),
     [days, assignments, t, locale]
   )
+
+  useEffect(() => {
+    if (reservation?.id) {
+      travelersApi.listForReservation(reservation.id)
+        .then(data => setSelectedTravelerIds((data.travelers || []).map((tr: any) => tr.id)))
+        .catch(() => {})
+    } else {
+      setSelectedTravelerIds([])
+    }
+  }, [reservation?.id, isOpen])
 
   useEffect(() => {
     if (reservation) {
@@ -206,6 +219,9 @@ export function ReservationModal({ isOpen, onClose, onSave, reservation, days, p
         }
       }
       const saved = await onSave(saveData)
+      if (saved?.id) {
+        travelersApi.setForReservation(saved.id, selectedTravelerIds).catch(() => {})
+      }
       if (!reservation?.id && saved?.id && pendingFiles.length > 0) {
         for (const file of pendingFiles) {
           const fd = new FormData()
@@ -513,6 +529,19 @@ export function ReservationModal({ isOpen, onClose, onSave, reservation, days, p
             </div>
           </>
         )}
+
+        {/* Travelers */}
+        <div>
+          <label className={labelClass} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Users2 size={10} style={{ display: 'inline' }} />
+            {t('reservations.travelers')}
+          </label>
+          <TravelerSelector
+            tripId={Number(tripId)}
+            value={selectedTravelerIds}
+            onChange={setSelectedTravelerIds}
+          />
+        </div>
 
         {/* Notes */}
         <div>

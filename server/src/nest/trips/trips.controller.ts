@@ -145,7 +145,7 @@ export class TripsController {
   @UseInterceptors(FileInterceptor('cover', COVER_UPLOAD))
   cover(@CurrentUser() user: User, @Param('id') id: string, @UploadedFile() file: Express.Multer.File | undefined) {
     if (process.env.DEMO_MODE?.toLowerCase() === 'true' && isDemoEmail(user.email)) {
-      throw new HttpException({ error: 'Uploads are disabled in demo mode. Self-host TREK for full functionality.' }, 403);
+      throw new HttpException({ error: 'Uploads are disabled in demo mode. Self-host TREK FAMILY for full functionality.' }, 403);
     }
     const access = this.trips.canAccessTrip(id, user.id);
     if (!access?.user_id) {
@@ -199,6 +199,15 @@ export class TripsController {
     if (info.isAdminDelete && info.ownerEmail) logInfo(`Admin ${user.email} deleted trip "${info.title}" owned by ${info.ownerEmail}`);
     this.trips.broadcast(String(info.tripId), 'trip:deleted', { id: info.tripId }, socketId);
     return { success: true };
+  }
+
+  @Get(':id/readiness')
+  readiness(@CurrentUser() user: User, @Param('id') id: string) {
+    const access = this.trips.canAccessTrip(id, user.id);
+    if (!access) {
+      throw new HttpException({ error: 'Trip not found' }, 404);
+    }
+    return this.trips.getReadiness(id);
   }
 
   @Get(':id/members')

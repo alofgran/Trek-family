@@ -40,10 +40,12 @@ export function getAllowedExtensions(): string {
 }
 
 const FILE_SELECT = `
-  SELECT f.*, r.title as reservation_title, u.username as uploaded_by_name, u.avatar as uploaded_by_avatar
+  SELECT f.*, r.title as reservation_title, u.username as uploaded_by_name, u.avatar as uploaded_by_avatar,
+    t.name as traveler_name, t.avatar as traveler_avatar, t.color as traveler_color
   FROM trip_files f
   LEFT JOIN reservations r ON f.reservation_id = r.id
   LEFT JOIN users u ON f.uploaded_by = u.id
+  LEFT JOIN travelers t ON f.traveler_id = t.id
 `;
 
 export function formatFile(file: TripFile & { trip_id?: number; uploaded_by_avatar?: string | null }) {
@@ -69,8 +71,8 @@ export function formatFile(file: TripFile & { trip_id?: number; uploaded_by_avat
  */
 export function findForeignLinkTarget(
   tripId: string | number,
-  opts: { reservation_id?: string | number | null; assignment_id?: string | number | null; place_id?: string | number | null }
-): 'reservation_id' | 'assignment_id' | 'place_id' | null {
+  opts: { reservation_id?: string | number | null; assignment_id?: string | number | null; place_id?: string | number | null; traveler_id?: string | number | null }
+): 'reservation_id' | 'assignment_id' | 'place_id' | 'traveler_id' | null {
   if (opts.reservation_id && !db.prepare('SELECT 1 FROM reservations WHERE id = ? AND trip_id = ?').get(opts.reservation_id, tripId)) {
     return 'reservation_id';
   }
@@ -79,6 +81,9 @@ export function findForeignLinkTarget(
   }
   if (opts.assignment_id && !db.prepare('SELECT 1 FROM day_assignments a JOIN days d ON a.day_id = d.id WHERE a.id = ? AND d.trip_id = ?').get(opts.assignment_id, tripId)) {
     return 'assignment_id';
+  }
+  if (opts.traveler_id && !db.prepare('SELECT 1 FROM trip_travelers WHERE traveler_id = ? AND trip_id = ?').get(opts.traveler_id, tripId)) {
+    return 'traveler_id';
   }
   return null;
 }
@@ -100,7 +105,7 @@ export function resolveFilePath(filename: string): { resolved: string; safe: boo
 // ---------------------------------------------------------------------------
 
 export function authenticateDownload(req: Request): { userId: number } | { error: string; status: number } {
-  const cookieToken = (req as any).cookies?.trek_session as string | undefined;
+  const cookieToken = (req as any).cookies?.trek_family_session as string | undefined;
   const authHeader = req.headers['authorization'];
   const bearerToken = authHeader ? (authHeader.split(' ')[1] || undefined) : undefined;
   const queryToken = req.query.token as string | undefined;
@@ -172,11 +177,11 @@ export function createFile(
   tripId: string | number,
   file: { filename: string; originalname: string; size: number; mimetype: string },
   uploadedBy: number,
-  opts: { place_id?: string | null; reservation_id?: string | null; description?: string | null }
+  opts: { place_id?: string | null; reservation_id?: string | null; description?: string | null; traveler_id?: string | number | null; expiry_date?: string | null; document_type?: string | null }
 ) {
   const result = db.prepare(`
-    INSERT INTO trip_files (trip_id, place_id, reservation_id, filename, original_name, file_size, mime_type, description, uploaded_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO trip_files (trip_id, place_id, reservation_id, filename, original_name, file_size, mime_type, description, uploaded_by, traveler_id, expiry_date, document_type)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     tripId,
     opts.place_id || null,
@@ -186,7 +191,10 @@ export function createFile(
     file.size,
     file.mimetype,
     opts.description || null,
-    uploadedBy
+    uploadedBy,
+    opts.traveler_id || null,
+    opts.expiry_date || null,
+    opts.document_type || null,
   );
 
   const created = db.prepare(`${FILE_SELECT} WHERE f.id = ?`).get(result.lastInsertRowid) as TripFile;
@@ -196,18 +204,31 @@ export function createFile(
 export function updateFile(
   id: string | number,
   current: TripFile,
-  updates: { description?: string; place_id?: string | null; reservation_id?: string | null }
+  updates: { description?: string; place_id?: string | null; reservation_id?: string | null; traveler_id?: string | number | null; expiry_date?: string | null; document_type?: string | null; extracted_data?: string | null }
 ) {
+  const nextExpiryDate = updates.expiry_date !== undefined ? (updates.expiry_date || null) : current.expiry_date;
+  const expiryChanged = nextExpiryDate !== (current.expiry_date ?? null);
+
   db.prepare(`
     UPDATE trip_files SET
       description = ?,
       place_id = ?,
-      reservation_id = ?
+      reservation_id = ?,
+      traveler_id = ?,
+      expiry_date = ?,
+      document_type = ?,
+      extracted_data = ?,
+      expiry_alert_sent_at = ?
     WHERE id = ?
   `).run(
     updates.description !== undefined ? updates.description : current.description,
     updates.place_id !== undefined ? (updates.place_id || null) : current.place_id,
     updates.reservation_id !== undefined ? (updates.reservation_id || null) : current.reservation_id,
+    updates.traveler_id !== undefined ? (updates.traveler_id || null) : current.traveler_id,
+    nextExpiryDate,
+    updates.document_type !== undefined ? (updates.document_type || null) : current.document_type,
+    updates.extracted_data !== undefined ? (updates.extracted_data || null) : current.extracted_data,
+    expiryChanged ? null : (current.expiry_alert_sent_at ?? null),
     id
   );
 

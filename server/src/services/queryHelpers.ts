@@ -7,9 +7,12 @@ interface TagRow extends Tag {
 
 interface ParticipantRow {
   assignment_id: number;
-  user_id: number;
-  username: string;
+  user_id: number | null;
+  traveler_id: number | null;
+  username: string | null;
   avatar: string | null;
+  traveler_name: string | null;
+  traveler_avatar: string | null;
 }
 
 /** Batch-load tags for multiple places in a single query, indexed by place ID. */
@@ -41,11 +44,25 @@ function loadTagsByPlaceIds(placeIds: number[], { compact }: { compact?: boolean
 function loadParticipantsByAssignmentIds(assignmentIds: number[]): Record<number, Participant[]> {
   const participantsByAssignment: Record<number, Participant[]> = {};
   if (assignmentIds.length > 0) {
-    const allParticipants = db.prepare(`SELECT ap.assignment_id, ap.user_id, u.username, u.avatar FROM assignment_participants ap JOIN users u ON ap.user_id = u.id WHERE ap.assignment_id IN (${assignmentIds.map(() => '?').join(',')})`)
-      .all(...assignmentIds) as ParticipantRow[];
+    const placeholders = assignmentIds.map(() => '?').join(',');
+    const allParticipants = db.prepare(`
+      SELECT ap.assignment_id, ap.user_id, ap.traveler_id, u.username, u.avatar,
+             t.name as traveler_name, t.avatar as traveler_avatar
+      FROM assignment_participants ap
+      LEFT JOIN users u ON ap.user_id = u.id
+      LEFT JOIN travelers t ON ap.traveler_id = t.id
+      WHERE ap.assignment_id IN (${placeholders})
+    `).all(...assignmentIds) as ParticipantRow[];
     for (const p of allParticipants) {
       if (!participantsByAssignment[p.assignment_id]) participantsByAssignment[p.assignment_id] = [];
-      participantsByAssignment[p.assignment_id].push({ user_id: p.user_id, username: p.username, avatar: p.avatar });
+      participantsByAssignment[p.assignment_id].push({
+        user_id: p.user_id,
+        traveler_id: p.traveler_id,
+        username: p.username,
+        avatar: p.avatar,
+        traveler_name: p.traveler_name,
+        traveler_avatar: p.traveler_avatar,
+      });
     }
   }
   return participantsByAssignment;

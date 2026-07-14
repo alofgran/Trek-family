@@ -214,8 +214,8 @@ export class AdminController {
 
   @Post('packing-templates')
   @HttpCode(201)
-  createPackingTemplate(@CurrentUser() user: User, @Body() body: { name?: unknown }) {
-    return ok(this.admin.createPackingTemplate(body.name, user.id));
+  createPackingTemplate(@CurrentUser() user: User, @Body() body: { name?: unknown; traveler_type?: unknown }) {
+    return ok(this.admin.createPackingTemplate(body.name, user.id, body.traveler_type));
   }
 
   @Put('packing-templates/:id')
@@ -247,8 +247,8 @@ export class AdminController {
 
   @Post('packing-templates/:templateId/categories/:catId/items')
   @HttpCode(201)
-  createTemplateItem(@Param('templateId') templateId: string, @Param('catId') catId: string, @Body() body: { name?: unknown }) {
-    return ok(this.admin.createTemplateItem(templateId, catId, body.name));
+  createTemplateItem(@Param('templateId') templateId: string, @Param('catId') catId: string, @Body() body: { name?: unknown; traveler_type?: unknown }) {
+    return ok(this.admin.createTemplateItem(templateId, catId, body.name, body.traveler_type));
   }
 
   @Put('packing-templates/:templateId/items/:itemId')

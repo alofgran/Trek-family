@@ -291,18 +291,19 @@ export function registerPackingTools(server: McpServer, userId: number, scopes: 
   if (W) server.registerTool(
     'apply_packing_template',
     {
-      description: 'Apply a packing template to a trip (adds items from the template).',
+      description: 'Apply a packing template to a trip. When traveler_ids is provided, items are added once per traveler tagged to that traveler. When omitted, items are added without a traveler tag.',
       inputSchema: {
         tripId: z.number().int().positive(),
         templateId: z.number().int().positive(),
+        traveler_ids: z.array(z.number().int().positive()).optional().describe('Traveler IDs to tag items to. Pass at least one when the template is personal.'),
       },
       annotations: TOOL_ANNOTATIONS_NON_IDEMPOTENT,
     },
-    async ({ tripId, templateId }) => {
+    async ({ tripId, templateId, traveler_ids }) => {
       if (isDemoUser(userId)) return demoDenied();
       if (!canAccessTrip(tripId, userId)) return noAccess();
       if (!hasTripPermission('packing_edit', tripId, userId)) return permissionDenied();
-      const items = applyTemplate(tripId, templateId);
+      const items = applyTemplate(tripId, templateId, traveler_ids);
       if (items === null) return { content: [{ type: 'text' as const, text: 'Template not found.' }], isError: true };
       safeBroadcast(tripId, 'packing:template-applied', { items });
       return ok({ items, count: items.length });

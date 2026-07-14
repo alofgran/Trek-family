@@ -42,6 +42,9 @@ export interface PackingListPanelProps {
  */
 export function usePackingList({ tripId, items, openImportSignal = 0, clearCheckedSignal = 0, saveTemplateSignal = 0, inlineHeader = true }: PackingListPanelProps) {
   const [filter, setFilter] = useState('alle') // 'alle' | 'offen' | 'erledigt'
+  const [travelerFilter, setTravelerFilter] = useState<number | null>(null)
+  const [groupBy, setGroupBy] = useState<'category' | 'traveler'>('category')
+  const tripTravelers = useTripStore(s => s.tripTravelers)
   const [addingCategory, setAddingCategory] = useState(false)
   const [newCatName, setNewCatName] = useState('')
   const { addPackingItem, updatePackingItem, deletePackingItem, togglePackingItem } = useTripStore()
@@ -91,15 +94,24 @@ export function usePackingList({ tripId, items, openImportSignal = 0, clearCheck
       if (filter === 'offen') return !i.checked
       if (filter === 'erledigt') return i.checked
       return true
+    }).filter(i => {
+      if (travelerFilter !== null) return (i as any).traveler_id === travelerFilter
+      return true
     })
     const groups: Record<string, PackingItem[]> = {}
     for (const item of filtered) {
-      const kat = item.category || t('packing.defaultCategory')
-      if (!groups[kat]) groups[kat] = []
-      groups[kat].push(item)
+      let key: string
+      if (groupBy === 'traveler') {
+        const traveler = tripTravelers.find(tr => tr.id === (item as any).traveler_id)
+        key = traveler ? traveler.name : t('packing.unassigned')
+      } else {
+        key = item.category || t('packing.defaultCategory')
+      }
+      if (!groups[key]) groups[key] = []
+      groups[key].push(item)
     }
     return groups
-  }, [items, filter, t])
+  }, [items, filter, travelerFilter, groupBy, tripTravelers, t])
 
   const abgehakt = items.filter(i => i.checked).length
   const fortschritt = items.length > 0 ? Math.round((abgehakt / items.length) * 100) : 0
@@ -174,6 +186,7 @@ export function usePackingList({ tripId, items, openImportSignal = 0, clearCheck
     if (failed) toast.error(t('packing.toast.deleteError'))
   }
 
+
   const handleClearChecked = async () => {
     if (!confirm(t('packing.confirm.clearChecked', { count: abgehakt }))) return
     let failed = false
@@ -246,6 +259,8 @@ export function usePackingList({ tripId, items, openImportSignal = 0, clearCheck
   const [applyingTemplate, setApplyingTemplate] = useState(false)
   const [showSaveTemplate, setShowSaveTemplate] = useState(false)
   const [saveTemplateName, setSaveTemplateName] = useState('')
+  const [pendingTemplateId, setPendingTemplateId] = useState<number | null>(null)
+  const [templateTravelerIds, setTemplateTravelerIds] = useState<number[]>([])
   const [showImportModal, setShowImportModal] = useState(false)
   const [importText, setImportText] = useState('')
   const lastHandledImportSignal = useRef(openImportSignal)
@@ -289,18 +304,40 @@ export function usePackingList({ tripId, items, openImportSignal = 0, clearCheck
     return () => document.removeEventListener('mousedown', handler)
   }, [showTemplateDropdown])
 
-  const handleApplyTemplate = async (templateId: number) => {
+  const handleApplyTemplate = async (templateId: number, travelerIds?: number[]) => {
     setApplyingTemplate(true)
     try {
-      const data = await packingApi.applyTemplate(tripId, templateId)
+      const data = await packingApi.applyTemplate(tripId, templateId, travelerIds)
       useTripStore.setState(s => ({ packingItems: [...s.packingItems, ...(data.items || [])] }))
       toast.success(t('packing.templateApplied', { count: data.count }))
       setShowTemplateDropdown(false)
-    } catch {
-      toast.error(t('packing.templateError'))
+      setPendingTemplateId(null)
+      setTemplateTravelerIds([])
+    } catch (err: any) {
+      const status = err?.response?.status
+      toast.error(status === 422 ? t('packing.templateEmpty') : t('packing.templateError'))
     } finally {
       setApplyingTemplate(false)
     }
+  }
+
+  const handleOpenTemplatePicker = (templateId: number) => {
+    if (tripTravelers.length === 0) {
+      handleApplyTemplate(templateId)
+    } else {
+      setPendingTemplateId(templateId)
+      setTemplateTravelerIds([])
+      setShowTemplateDropdown(false)
+    }
+  }
+
+  const handleConfirmTemplateApply = () => {
+    if (pendingTemplateId === null) return
+    handleApplyTemplate(pendingTemplateId, templateTravelerIds.length > 0 ? templateTravelerIds : undefined)
+  }
+
+  const toggleTemplateTraveler = (id: number) => {
+    setTemplateTravelerIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
   const handleSaveAsTemplate = async () => {
@@ -341,7 +378,8 @@ export function usePackingList({ tripId, items, openImportSignal = 0, clearCheck
 
   return {
     tripId, items, inlineHeader, t, canEdit, isAdmin, font,
-    filter, setFilter, addingCategory, setAddingCategory, newCatName, setNewCatName,
+    filter, setFilter, travelerFilter, setTravelerFilter, groupBy, setGroupBy, tripTravelers,
+    addingCategory, setAddingCategory, newCatName, setNewCatName,
     tripMembers, categoryAssignees, handleSetAssignees, allCategories, gruppiert, abgehakt, fortschritt,
     handleAddItemToCategory, handleAddNewCategory, handleRenameCategory, handleDeleteCategory, handleDeleteItem, handleClearChecked,
     bagTrackingEnabled, bags, newBagName, setNewBagName, showAddBag, setShowAddBag, showBagModal, setShowBagModal,
@@ -349,6 +387,8 @@ export function usePackingList({ tripId, items, openImportSignal = 0, clearCheck
     availableTemplates, showTemplateDropdown, setShowTemplateDropdown, applyingTemplate,
     showSaveTemplate, setShowSaveTemplate, saveTemplateName, setSaveTemplateName,
     showImportModal, setShowImportModal, importText, setImportText,
+    pendingTemplateId, setPendingTemplateId, templateTravelerIds, toggleTemplateTraveler,
+    handleOpenTemplatePicker, handleConfirmTemplateApply,
     csvInputRef, templateDropdownRef, handleApplyTemplate, handleSaveAsTemplate, parseImportLines, handleBulkImport, handleCsvFile,
   }
 }

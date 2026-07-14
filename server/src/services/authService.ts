@@ -16,6 +16,7 @@ import { createEphemeralToken } from './ephemeralTokens';
 import { revokeUserSessions } from '../mcp';
 import { startTripReminders } from '../scheduler';
 import { deleteUserCompletely } from './userCleanupService';
+import { getOrCreateLinkedTraveler } from './travelerService';
 import { getFlightDistanceKm } from './distanceService';
 import { verifyJwtAndLoadUser } from '../middleware/auth';
 import { User } from '../types';
@@ -53,6 +54,10 @@ const ADMIN_SETTINGS_KEYS = [
   'notify_trip_reminder',
   'password_login', 'password_registration', 'oidc_login', 'oidc_registration',
   'passkey_login', 'webauthn_rp_id', 'webauthn_origins',
+  // Document-parsing AI provider (BYO key/endpoint, provider-agnostic):
+  // 'anthropic' or 'openai_compatible' (covers real OpenAI and self-hosted
+  // OpenAI-compatible vision endpoints).
+  'ai_provider', 'ai_api_key', 'ai_base_url', 'ai_model',
 ];
 
 const avatarDir = path.join(__dirname, '../../uploads/avatars');
@@ -432,10 +437,17 @@ export function registerUser(body: {
       }
     }
 
+    const newUserId = Number(result.lastInsertRowid);
+    try {
+      getOrCreateLinkedTraveler(newUserId);
+    } catch (err) {
+      console.error('[auth] Failed to create linked traveler for user', newUserId, err);
+    }
+
     return {
       token,
       user: { ...user, avatar_url: null },
-      auditUserId: Number(result.lastInsertRowid),
+      auditUserId: newUserId,
       auditDetails: { username, email, role },
     };
   } catch {
@@ -833,7 +845,7 @@ export function getAppSettings(userId: number): { error?: string; status?: numbe
   const result: Record<string, string> = {};
   for (const key of ADMIN_SETTINGS_KEYS) {
     const row = db.prepare("SELECT value FROM app_settings WHERE key = ?").get(key) as { value: string } | undefined;
-    if (row) result[key] = (key === 'smtp_pass' || key === 'admin_webhook_url' || key === 'admin_ntfy_token') ? '••••••••' : row.value;
+    if (row) result[key] = (key === 'smtp_pass' || key === 'admin_webhook_url' || key === 'admin_ntfy_token' || key === 'ai_api_key') ? '••••••••' : row.value;
   }
   return { data: result };
 }
@@ -892,6 +904,8 @@ export function updateAppSettings(
       if (key === 'admin_webhook_url' && val) val = maybe_encrypt_api_key(val) ?? val;
       if (key === 'admin_ntfy_token' && val === '••••••••') continue;
       if (key === 'admin_ntfy_token' && val) val = maybe_encrypt_api_key(val) ?? val;
+      if (key === 'ai_api_key' && val === '••••••••') continue;
+      if (key === 'ai_api_key' && val) val = maybe_encrypt_api_key(val) ?? val;
       db.prepare("INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)").run(key, val);
     }
   }
@@ -1004,7 +1018,7 @@ export function setupMfa(userId: number, userEmail: string): { error?: string; s
   try {
     secret = authenticator.generateSecret();
     mfaSetupPending.set(userId, { secret, exp: Date.now() + MFA_SETUP_TTL_MS });
-    otpauth_url = authenticator.keyuri(userEmail, 'TREK', secret);
+    otpauth_url = authenticator.keyuri(userEmail, 'TREK FAMILY', secret);
   } catch (err) {
     console.error('[MFA] Setup error:', err);
     return { error: 'MFA setup failed', status: 500 };

@@ -3,7 +3,7 @@ import path from 'path';
 import zlib from 'zlib';
 import { db } from '../db/database';
 import { Trip, Place } from '../types';
-import { CONTINENT_MAP } from '@trek/shared';
+import { CONTINENT_MAP } from '@trek-family/shared';
 
 // ── Bundled boundary GeoJSON (admin-0 countries + admin-1 regions) ─────────
 //
@@ -317,6 +317,13 @@ function getPlacesForTrips(tripIds: number[]): Place[] {
   if (tripIds.length === 0) return [];
   const placeholders = tripIds.map(() => '?').join(',');
   return db.prepare(`SELECT * FROM places WHERE trip_id IN (${placeholders})`).all(...tripIds) as Place[];
+}
+
+/** Distinct destination country codes for a single trip, resolved from its places. */
+export function getTripCountries(tripId: number | string): string[] {
+  const places = getPlacesForTrips([Number(tripId)]);
+  const resolved = resolvePlaceCountries(places);
+  return Array.from(new Set(resolved.values()));
 }
 
 // ── Country resolution (batch DB cache + sync fallback + background geocoding) ──

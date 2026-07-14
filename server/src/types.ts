@@ -139,20 +139,26 @@ export interface BudgetItem {
 
 export interface BudgetItemMember {
   user_id: number;
+  traveler_id?: number | null;
   paid: number;
-  username: string;
+  username: string | null;
   avatar_url?: string | null;
   avatar?: string | null;
   budget_item_id?: number;
+  traveler_name?: string | null;
+  traveler_avatar?: string | null;
 }
 
 export interface BudgetItemPayer {
   user_id: number;
+  traveler_id?: number | null;
   amount: number;
   username?: string;
   avatar_url?: string | null;
   avatar?: string | null;
   budget_item_id?: number;
+  traveler_name?: string | null;
+  traveler_avatar?: string | null;
 }
 
 export interface ReservationEndpoint {
@@ -201,6 +207,14 @@ export interface TripFile {
   note_id?: number | null;
   uploaded_by?: number | null;
   uploaded_by_name?: string | null;
+  traveler_id?: number | null;
+  traveler_name?: string | null;
+  traveler_avatar?: string | null;
+  traveler_color?: string | null;
+  expiry_date?: string | null;
+  document_type?: string | null;
+  extracted_data?: string | null;
+  expiry_alert_sent_at?: string | null;
   filename: string;
   original_name: string;
   file_size?: number | null;
@@ -333,9 +347,12 @@ export interface AssignmentRow extends DayAssignment {
 }
 
 export interface Participant {
-  user_id: number;
-  username: string;
+  user_id: number | null;
+  traveler_id?: number | null;
+  username: string | null;
   avatar?: string | null;
+  traveler_name?: string | null;
+  traveler_avatar?: string | null;
 }
 
 // ── Journey addon ─────────────────────────────────────────────────────────

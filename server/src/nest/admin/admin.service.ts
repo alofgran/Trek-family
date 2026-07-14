@@ -52,13 +52,13 @@ export class AdminService {
   // Packing templates
   listPackingTemplates() { return svc.listPackingTemplates(); }
   getPackingTemplate(id: string) { return svc.getPackingTemplate(id); }
-  createPackingTemplate(name: unknown, userId: number) { return svc.createPackingTemplate(name as string, userId); }
+  createPackingTemplate(name: unknown, userId: number, travelerType?: unknown) { return svc.createPackingTemplate(name as string, userId, travelerType as string | null | undefined); }
   updatePackingTemplate(id: string, body: unknown) { return svc.updatePackingTemplate(id, body as Parameters<typeof svc.updatePackingTemplate>[1]); }
   deletePackingTemplate(id: string) { return svc.deletePackingTemplate(id); }
   createTemplateCategory(templateId: string, name: unknown) { return svc.createTemplateCategory(templateId, name as string); }
   updateTemplateCategory(templateId: string, catId: string, body: unknown) { return svc.updateTemplateCategory(templateId, catId, body as Parameters<typeof svc.updateTemplateCategory>[2]); }
   deleteTemplateCategory(templateId: string, catId: string) { return svc.deleteTemplateCategory(templateId, catId); }
-  createTemplateItem(templateId: string, catId: string, name: unknown) { return svc.createTemplateItem(templateId, catId, name as string); }
+  createTemplateItem(templateId: string, catId: string, name: unknown, travelerType?: unknown) { return svc.createTemplateItem(templateId, catId, name as string, travelerType as string | null | undefined); }
   updateTemplateItem(itemId: string, body: unknown) { return svc.updateTemplateItem(itemId, body as Parameters<typeof svc.updateTemplateItem>[1]); }
   deleteTemplateItem(itemId: string) { return svc.deleteTemplateItem(itemId); }
 

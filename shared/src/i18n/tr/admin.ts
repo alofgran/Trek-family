@@ -204,7 +204,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': 'Kaydedilemedi',
   'admin.tabs.addons': 'Eklentiler',
   'admin.addons.title': 'Eklentiler',
-  'admin.addons.subtitle': 'TREK deneyiminizi özelleştirmek için özellikleri etkinleştirin veya devre dışı bırakın.',
+  'admin.addons.subtitle': 'TREK FAMILY deneyiminizi özelleştirmek için özellikleri etkinleştirin veya devre dışı bırakın.',
   'admin.addons.catalog.packing.name': 'Listeler',
   'admin.addons.catalog.packing.description': 'Seyahatleriniz için paket listeleri ve yapılacak işler',
   'admin.addons.catalog.budget.name': 'Bütçe',
@@ -238,7 +238,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'Hava Durumu Verileri',
   'admin.weather.badge': "24 Mart 2026'dan beri",
   'admin.weather.description':
-    "TREK, hava durumu veri kaynağı olarak Open-Meteo'yu kullanıyor. Open-Meteo ücretsiz, açık kaynaklı bir hava durumu hizmetidir; API anahtarı gerekmez.",
+    "TREK FAMILY, hava durumu veri kaynağı olarak Open-Meteo'yu kullanıyor. Open-Meteo ücretsiz, açık kaynaklı bir hava durumu hizmetidir; API anahtarı gerekmez.",
   'admin.weather.forecast': '16 günlük tahmin',
   'admin.weather.forecastDesc': 'Daha önce 5 gün (OpenWeatherMap)',
   'admin.weather.climate': 'Geçmiş iklim verileri',

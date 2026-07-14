@@ -1,5 +1,5 @@
 /**
- * @trek/shared — single source of truth for TREK's API contracts.
+ * @trek-family/shared — single source of truth for TREK's API contracts.
  *
  * Zod schemas defined here are consumed by BOTH the server (validation +
  * inferred DTO types) and the client (typed requests/responses). A route is
@@ -33,6 +33,7 @@ export * from './place/place.schema';
 export * from './trip/trip.schema';
 export * from './collab/collab.schema';
 export * from './file/file.schema';
+export * from './file/documentParse.schema';
 export * from './journey/journey.schema';
 export * from './share/share.schema';
 export * from './settings/settings.schema';
@@ -41,6 +42,7 @@ export * from './auth/auth.schema';
 export * from './oidc/oidc.schema';
 export * from './oauth/oauth.schema';
 export * from './admin/admin.schema';
+export * from './traveler/traveler.schema';
 
 // Sanitisation helpers — used by the client today, scoped here so the server
 // has them ready if rich-text input ever ships.

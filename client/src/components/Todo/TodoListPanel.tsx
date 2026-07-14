@@ -18,6 +18,7 @@ import type { TodoItem } from '../../types'
 import { KAT_COLORS, PRIO_CONFIG, katColor, type FilterType, type Member } from './todoListModel'
 import { useTodoList } from './useTodoList'
 import TodoRow from './TodoRow'
+import { TravelerSelector } from '../Travelers/TravelerSelector'
 
 export default function TodoListPanel({ tripId, items, addItemSignal = 0 }: { tripId: number; items: TodoItem[]; addItemSignal?: number }) {
   // Layout component: state/effects/derived/handlers live in useTodoList.
@@ -201,7 +202,6 @@ export default function TodoListPanel({ tripId, items, addItemSignal = 0 }: { tr
           item={selectedItem}
           tripId={tripId}
           categories={categories}
-          members={members}
           onClose={() => setSelectedId(null)}
         />
       )}
@@ -214,7 +214,6 @@ export default function TodoListPanel({ tripId, items, addItemSignal = 0 }: { tr
               item={selectedItem}
               tripId={tripId}
               categories={categories}
-              members={members}
               onClose={() => setSelectedId(null)}
             />
           </div>
@@ -229,7 +228,6 @@ export default function TodoListPanel({ tripId, items, addItemSignal = 0 }: { tr
             <NewTaskPane
               tripId={tripId}
               categories={categories}
-              members={members}
               defaultCategory={typeof filter === 'string' && categories.includes(filter) ? filter : null}
               onCreated={(id) => { setIsAddingNew(false); setSelectedId(id) }}
               onClose={() => setIsAddingNew(false)}
@@ -247,7 +245,6 @@ export default function TodoListPanel({ tripId, items, addItemSignal = 0 }: { tr
             <NewTaskPane
               tripId={tripId}
               categories={categories}
-              members={members}
               defaultCategory={typeof filter === 'string' && categories.includes(filter) ? filter : null}
               onCreated={(id) => { setIsAddingNew(false); setSelectedId(id) }}
               onClose={() => setIsAddingNew(false)}
@@ -262,8 +259,8 @@ export default function TodoListPanel({ tripId, items, addItemSignal = 0 }: { tr
 
 // ── Detail Pane (right side) ──────────────────────────────────────────────
 
-function DetailPane({ item, tripId, categories, members, onClose }: {
-  item: TodoItem; tripId: number; categories: string[]; members: Member[];
+function DetailPane({ item, tripId, categories, onClose }: {
+  item: TodoItem; tripId: number; categories: string[];
   onClose: () => void;
 }) {
   const { updateTodoItem, deleteTodoItem } = useTripStore()
@@ -278,7 +275,7 @@ function DetailPane({ item, tripId, categories, members, onClose }: {
   const [dueDate, setDueDate] = useState(item.due_date || '')
   const [category, setCategory] = useState(item.category || '')
   const [addingCategory, setAddingCategoryInline] = useState(false)
-  const [assignedUserId, setAssignedUserId] = useState<number | null>(item.assigned_user_id)
+  const [assignedTravelerId, setAssignedTravelerId] = useState<number | null>(item.assigned_traveler_id ?? null)
   const [priority, setPriority] = useState(item.priority || 0)
   const [saving, setSaving] = useState(false)
 
@@ -288,13 +285,14 @@ function DetailPane({ item, tripId, categories, members, onClose }: {
     setDesc(item.description || '')
     setDueDate(item.due_date || '')
     setCategory(item.category || '')
-    setAssignedUserId(item.assigned_user_id)
+    setAssignedTravelerId(item.assigned_traveler_id ?? null)
     setPriority(item.priority || 0)
-  }, [item.id, item.name, item.description, item.due_date, item.category, item.assigned_user_id, item.priority])
+  }, [item.id, item.name, item.description, item.due_date, item.category, item.assigned_traveler_id, item.priority])
 
   const hasChanges = name !== item.name || desc !== (item.description || '') ||
     dueDate !== (item.due_date || '') || category !== (item.category || '') ||
-    assignedUserId !== item.assigned_user_id || priority !== (item.priority || 0)
+    assignedTravelerId !== (item.assigned_traveler_id ?? null) ||
+    priority !== (item.priority || 0)
 
   const save = async () => {
     if (!name.trim() || !hasChanges) return
@@ -303,7 +301,9 @@ function DetailPane({ item, tripId, categories, members, onClose }: {
       await updateTodoItem(tripId, item.id, {
         name: name.trim(), description: desc || null,
         due_date: dueDate || null, category: category || null,
-        assigned_user_id: assignedUserId, priority,
+        assigned_user_id: null,
+        assigned_traveler_id: assignedTravelerId,
+        priority,
       } as any)
     } catch (err: unknown) { toast.error(err instanceof Error ? err.message : t('common.error')) }
     setSaving(false)
@@ -436,29 +436,14 @@ function DetailPane({ item, tripId, categories, members, onClose }: {
           />
         </div>
 
-        {/* Assigned to */}
+        {/* Assigned to (traveler) */}
         <div>
           <label className={labelClass}>{t('todo.detail.assignedTo')}</label>
-          <CustomSelect
-            value={String(assignedUserId ?? '')}
-            onChange={v => setAssignedUserId(v ? Number(v) : null)}
-            options={[
-              { value: '', label: t('todo.unassigned'), icon: <User size={14} className="text-content-faint" /> },
-              ...members.map(m => ({
-                value: String(m.id),
-                label: m.username,
-                icon: m.avatar ? (
-                  <img src={`/uploads/avatars/${m.avatar}`} style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' as const }} alt="" />
-                ) : (
-                  <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--border-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-faint)', fontWeight: 600 }}>
-                    {m.username.charAt(0).toUpperCase()}
-                  </span>
-                ),
-              })),
-            ]}
-            placeholder={t('todo.unassigned')}
-            size="sm"
-            disabled={!canEdit}
+          <TravelerSelector
+            tripId={tripId}
+            value={assignedTravelerId !== null ? [assignedTravelerId] : []}
+            onChange={ids => setAssignedTravelerId(ids.length > 0 ? ids[0] : null)}
+            singleSelect
           />
         </div>
       </div>
@@ -492,8 +477,8 @@ function DetailPane({ item, tripId, categories, members, onClose }: {
 
 // ── New Task Pane (right side, for creating) ──────────────────────────────
 
-function NewTaskPane({ tripId, categories, members, defaultCategory, onCreated, onClose }: {
-  tripId: number; categories: string[]; members: Member[]; defaultCategory: string | null;
+function NewTaskPane({ tripId, categories, defaultCategory, onCreated, onClose }: {
+  tripId: number; categories: string[]; defaultCategory: string | null;
   onCreated: (id: number) => void; onClose: () => void;
 }) {
   const { addTodoItem } = useTripStore()
@@ -505,7 +490,7 @@ function NewTaskPane({ tripId, categories, members, defaultCategory, onCreated, 
   const [dueDate, setDueDate] = useState('')
   const [category, setCategory] = useState(defaultCategory || '')
   const [addingCategory, setAddingCategoryInline] = useState(false)
-  const [assignedUserId, setAssignedUserId] = useState<number | null>(null)
+  const [assignedTravelerId, setAssignedTravelerId] = useState<number | null>(null)
   const [priority, setPriority] = useState(0)
   const [saving, setSaving] = useState(false)
 
@@ -519,7 +504,7 @@ function NewTaskPane({ tripId, categories, members, defaultCategory, onCreated, 
       const item = await addTodoItem(tripId, {
         name: name.trim(), description: desc || null, priority,
         due_date: dueDate || null, category: trimmedCategory || null,
-        assigned_user_id: assignedUserId,
+        assigned_traveler_id: assignedTravelerId,
       } as any)
       if (item?.id) onCreated(item.id)
     } catch (err: unknown) { toast.error(err instanceof Error ? err.message : t('common.error')) }
@@ -630,24 +615,11 @@ function NewTaskPane({ tripId, categories, members, defaultCategory, onCreated, 
 
         <div>
           <label className={labelClass}>{t('todo.detail.assignedTo')}</label>
-          <CustomSelect
-            value={String(assignedUserId ?? '')}
-            onChange={v => setAssignedUserId(v ? Number(v) : null)}
-            options={[
-              { value: '', label: t('todo.unassigned'), icon: <User size={14} className="text-content-faint" /> },
-              ...members.map(m => ({
-                value: String(m.id), label: m.username,
-                icon: m.avatar ? (
-                  <img src={`/uploads/avatars/${m.avatar}`} style={{ width: 18, height: 18, borderRadius: '50%', objectFit: 'cover' as const }} alt="" />
-                ) : (
-                  <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--border-primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--text-faint)', fontWeight: 600 }}>
-                    {m.username.charAt(0).toUpperCase()}
-                  </span>
-                ),
-              })),
-            ]}
-            placeholder={t('todo.unassigned')}
-            size="sm"
+          <TravelerSelector
+            tripId={tripId}
+            value={assignedTravelerId !== null ? [assignedTravelerId] : []}
+            onChange={ids => setAssignedTravelerId(ids.length > 0 ? ids[0] : null)}
+            singleSelect
           />
         </div>
       </div>

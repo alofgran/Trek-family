@@ -30,6 +30,8 @@ export const SCOPES = {
   JOURNEY_READ:        'journey:read',
   JOURNEY_WRITE:       'journey:write',
   JOURNEY_SHARE:       'journey:share',
+  TRAVELERS_READ:      'travelers:read',
+  TRAVELERS_WRITE:     'travelers:write',
 } as const;
 
 export type Scope = typeof SCOPES[keyof typeof SCOPES];
@@ -70,6 +72,8 @@ export const SCOPE_INFO: Record<Scope, ScopeInfo> = {
   'journey:read':        { label: 'View journeys',              description: 'Read journeys, entries, and contributor list',                          group: 'Journey' },
   'journey:write':       { label: 'Manage journeys',            description: 'Create, update, and delete journeys and their entries',                 group: 'Journey' },
   'journey:share':       { label: 'Manage journey links',       description: 'Create, update, and revoke public share links for journeys',            group: 'Journey' },
+  'travelers:read':      { label: 'View travelers',             description: 'Read traveler roster and trip-traveler assignments',                    group: 'Travelers' },
+  'travelers:write':     { label: 'Manage travelers',           description: 'Create, update, delete, and assign travelers to trips',                 group: 'Travelers' },
 };
 
 // ---------------------------------------------------------------------------

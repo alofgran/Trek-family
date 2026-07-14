@@ -29,6 +29,7 @@ export const packingItemSchema = z.object({
   weight_grams: z.number().nullable().optional(),
   bag_id: z.number().nullable().optional(),
   quantity: z.number().optional(),
+  traveler_id: z.number().nullable().optional(),
   created_at: z.string().optional(),
 });
 export type PackingItem = z.infer<typeof packingItemSchema>;
@@ -67,6 +68,7 @@ export const packingCreateItemRequestSchema = z.object({
   name: z.string().min(1),
   category: z.string().optional(),
   checked: z.boolean().optional(),
+  quantity: z.number().optional(),
 });
 export type PackingCreateItemRequest = z.infer<typeof packingCreateItemRequestSchema>;
 
@@ -118,6 +120,8 @@ export const packingTemplateSummarySchema = z.object({
   id: z.number(),
   name: z.string(),
   item_count: z.number(),
+  /** Age band this template is tailored for (e.g. a "Baby bag" or "Teen essentials" list); null = general/any traveler. */
+  traveler_type: z.enum(['adult', 'teen', 'child', 'infant']).nullable().optional(),
 });
 export type PackingTemplateSummary = z.infer<typeof packingTemplateSummarySchema>;
 

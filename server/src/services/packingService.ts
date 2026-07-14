@@ -28,7 +28,7 @@ export function createItem(tripId: string | number, data: { name: string; catego
 export function updateItem(
   tripId: string | number,
   id: string | number,
-  data: { name?: string; checked?: number; category?: string; weight_grams?: number | null; bag_id?: number | null; quantity?: number },
+  data: { name?: string; checked?: number; category?: string; weight_grams?: number | null; bag_id?: number | null; quantity?: number; traveler_id?: number | null },
   bodyKeys: string[]
 ) {
   const item = db.prepare('SELECT * FROM packing_items WHERE id = ? AND trip_id = ?').get(id, tripId);
@@ -41,7 +41,8 @@ export function updateItem(
       category = COALESCE(?, category),
       weight_grams = CASE WHEN ? THEN ? ELSE weight_grams END,
       bag_id = CASE WHEN ? THEN ? ELSE bag_id END,
-      quantity = CASE WHEN ? THEN ? ELSE quantity END
+      quantity = CASE WHEN ? THEN ? ELSE quantity END,
+      traveler_id = CASE WHEN ? THEN ? ELSE traveler_id END
     WHERE id = ?
   `).run(
     data.name || null,
@@ -54,6 +55,8 @@ export function updateItem(
     data.bag_id ?? null,
     bodyKeys.includes('quantity') ? 1 : 0,
     data.quantity ? Math.max(1, Math.min(999, Number(data.quantity))) : 1,
+    bodyKeys.includes('traveler_id') ? 1 : 0,
+    data.traveler_id ?? null,
     id
   );
 
@@ -196,41 +199,83 @@ export function deleteBag(tripId: string | number, bagId: string | number) {
 // ── List Templates ─────────────────────────────────────────────────────────
 
 /**
- * Read-only template list for trip members (name + item count), so non-admins
- * can pick a template to apply. Management (create/edit/delete) stays admin-only
- * under /api/admin/packing-templates.
+ * Read-only template list for trip members (name + item count). Returns
+ * admin-managed global templates plus the requesting user's personal ones.
+ * Management of admin templates stays under /api/admin/packing-templates.
  */
-export function listTemplates() {
+export function listTemplates(userId?: number) {
+  const whereClause = userId !== undefined
+    ? 'WHERE pt.is_personal = 0 OR (pt.is_personal = 1 AND pt.created_by = ?)'
+    : 'WHERE pt.is_personal = 0 OR pt.is_personal IS NULL';
+  const params = userId !== undefined ? [userId] : [];
   return db.prepare(`
-    SELECT pt.id, pt.name,
+    SELECT pt.id, pt.name, COALESCE(pt.is_personal, 0) as is_personal, pt.traveler_type,
       (SELECT COUNT(*) FROM packing_template_items ti JOIN packing_template_categories tc ON ti.category_id = tc.id WHERE tc.template_id = pt.id) as item_count
     FROM packing_templates pt
-    ORDER BY pt.created_at DESC
-  `).all() as { id: number; name: string; item_count: number }[];
+    ${whereClause}
+    ORDER BY COALESCE(pt.is_personal, 0) ASC, pt.created_at DESC
+  `).all(...params) as { id: number; name: string; is_personal: number; traveler_type: string | null; item_count: number }[];
 }
 
 // ── Apply Template ─────────────────────────────────────────────────────────
 
-export function applyTemplate(tripId: string | number, templateId: string | number) {
+export function applyTemplate(tripId: string | number, templateId: string | number, travelerIds?: number[]) {
+  const templateExists = db.prepare('SELECT 1 FROM packing_templates WHERE id = ?').get(templateId);
+  if (!templateExists) return null;
+
   const templateItems = db.prepare(`
-    SELECT ti.name, tc.name as category
+    SELECT ti.name, tc.name as category, ti.traveler_type
     FROM packing_template_items ti
     JOIN packing_template_categories tc ON ti.category_id = tc.id
     WHERE tc.template_id = ?
     ORDER BY tc.sort_order, ti.sort_order
-  `).all(templateId) as { name: string; category: string }[];
+  `).all(templateId) as { name: string; category: string; traveler_type: string | null }[];
 
-  if (templateItems.length === 0) return null;
+  // undefined = "this template has no items configured" (a real config problem).
+  // Distinct from an empty array below, which means the apply succeeded but
+  // added nothing new because every (traveler, item) pair already existed —
+  // re-applying an already-applied template is a valid no-op, not an error.
+  if (templateItems.length === 0) return undefined;
 
   const maxOrder = db.prepare('SELECT MAX(sort_order) as max FROM packing_items WHERE trip_id = ?').get(tripId) as { max: number | null };
   let sortOrder = (maxOrder.max !== null ? maxOrder.max : -1) + 1;
 
-  const insert = db.prepare('INSERT INTO packing_items (trip_id, name, checked, category, sort_order) VALUES (?, ?, 0, ?, ?)');
   const added: any[] = [];
-  for (const ti of templateItems) {
-    const result = insert.run(tripId, ti.name, ti.category, sortOrder++);
-    const item = db.prepare('SELECT * FROM packing_items WHERE id = ?').get(result.lastInsertRowid);
-    added.push(item);
+
+  if (travelerIds && travelerIds.length > 0) {
+    // Insert once per traveler, tagging each item with that traveler. An item
+    // pinned to a traveler_type (e.g. "diapers" → infant) is skipped for
+    // travelers of a different age band, so one shared family template can
+    // cover a mixed-age trip without dumping every item on everyone.
+    //
+    // Dedup by (traveler, item name): applying the same template twice, or two
+    // different templates that both tag e.g. "sunscreen" to the same traveler,
+    // must not produce two rows for that traveler on the merged item — that
+    // showed up as the same person's chip appearing twice on one row.
+    const existing = db.prepare(
+      'SELECT LOWER(name) as name, traveler_id FROM packing_items WHERE trip_id = ? AND traveler_id IS NOT NULL'
+    ).all(tripId) as { name: string; traveler_id: number }[];
+    const existingPairs = new Set(existing.map(e => `${e.traveler_id}:${e.name}`));
+
+    const insert = db.prepare('INSERT INTO packing_items (trip_id, name, checked, category, sort_order, traveler_id) VALUES (?, ?, 0, ?, ?, ?)');
+    for (const travelerId of travelerIds) {
+      const traveler = db.prepare('SELECT type FROM travelers WHERE id = ?').get(travelerId) as { type: string } | undefined;
+      for (const ti of templateItems) {
+        if (ti.traveler_type && ti.traveler_type !== traveler?.type) continue;
+        const pairKey = `${travelerId}:${ti.name.toLowerCase()}`;
+        if (existingPairs.has(pairKey)) continue;
+        existingPairs.add(pairKey);
+        const result = insert.run(tripId, ti.name, ti.category, sortOrder++, travelerId);
+        added.push(db.prepare('SELECT * FROM packing_items WHERE id = ?').get(result.lastInsertRowid));
+      }
+    }
+  } else {
+    // Existing behavior: insert without traveler tag
+    const insert = db.prepare('INSERT INTO packing_items (trip_id, name, checked, category, sort_order) VALUES (?, ?, 0, ?, ?)');
+    for (const ti of templateItems) {
+      const result = insert.run(tripId, ti.name, ti.category, sortOrder++);
+      added.push(db.prepare('SELECT * FROM packing_items WHERE id = ?').get(result.lastInsertRowid));
+    }
   }
 
   return added;

@@ -80,6 +80,9 @@ function writeToDexie(
         case 'packing:deleted':
           await offlineDb.packingItems.delete(payload.itemId as number)
           break
+        case 'packing:reordered':
+          await offlineDb.packingItems.bulkPut(state.packingItems)
+          break
 
         // ── Todo ─────────────────────────────────────────────────────────────
         case 'todo:created':
@@ -345,6 +348,16 @@ export function handleRemoteEvent(set: SetState, get: GetState, event: WebSocket
         return {
           packingItems: state.packingItems.filter(i => i.id !== payload.itemId),
         }
+      case 'packing:reordered': {
+        const orderedIds = payload.orderedIds as number[]
+        const byId = new Map(state.packingItems.map(i => [i.id, i]))
+        const reordered = orderedIds.map((id, idx): PackingItem | null => {
+          const item = byId.get(id)
+          return item ? { ...item, sort_order: idx } : null
+        }).filter((i): i is PackingItem => i !== null)
+        const remaining = state.packingItems.filter(i => !orderedIds.includes(i.id))
+        return { packingItems: [...reordered, ...remaining] }
+      }
 
       // Todo
       case 'todo:created':

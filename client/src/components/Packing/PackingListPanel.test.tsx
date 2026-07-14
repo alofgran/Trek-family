@@ -195,7 +195,7 @@ describe('PackingListPanel', () => {
   it('FE-COMP-PACKING-017: shows filter buttons (All, Open, Done) when items exist', () => {
     const items = [buildPackingItem({ name: 'Shirt', category: 'Clothing' })];
     render(<PackingListPanel tripId={1} items={items} />);
-    expect(screen.getByText('All')).toBeInTheDocument();
+    expect(screen.getByText('All Statuses')).toBeInTheDocument();
     expect(screen.getByText('Open')).toBeInTheDocument();
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
@@ -234,7 +234,7 @@ describe('PackingListPanel', () => {
     expect(screen.getByText('No items match this filter')).toBeInTheDocument();
   });
 
-  it('FE-COMP-PACKING-023: inline edit item name via pencil icon calls PUT', async () => {
+  it('FE-COMP-PACKING-023: inline edit item name via clicking the name calls PUT', async () => {
     const user = userEvent.setup();
     const item = buildPackingItem({ id: 42, name: 'Sunscreen', category: 'Toiletries' });
     let patchBody: Record<string, unknown> | null = null;
@@ -246,8 +246,8 @@ describe('PackingListPanel', () => {
     );
     render(<PackingListPanel tripId={1} items={[item]} />);
 
-    // Click the rename (pencil) button
-    await user.click(screen.getByTitle('Rename'));
+    // Click the item name to enter inline edit mode (the pencil rename button was removed)
+    await user.click(screen.getByText('Sunscreen'));
 
     // Input appears pre-filled with 'Sunscreen'
     const input = screen.getByDisplayValue('Sunscreen');
@@ -261,9 +261,14 @@ describe('PackingListPanel', () => {
     await waitFor(() => expect(patchBody).toMatchObject({ name: 'Sunblock' }));
   });
 
-  it('FE-COMP-PACKING-024: toggle item checked state calls PUT', async () => {
+  it('FE-COMP-PACKING-024: clicking the assigned traveler\'s chip toggles checked state via PUT', async () => {
+    // Packing items have no standalone checkbox — checking an item off is a
+    // per-traveler action (click that traveler's chip avatar), so the item must
+    // be assigned to a traveler before it can be toggled at all.
     const user = userEvent.setup();
-    const item = buildPackingItem({ id: 50, name: 'Shorts', checked: 0, category: 'Clothing' });
+    const traveler = { id: 9, managed_by_user_id: 1, linked_user_id: 1, name: 'Alice', avatar: null, color: null, type: 'adult' as const, created_at: '2025-01-01T00:00:00.000Z', added_at: '2025-01-01T00:00:00.000Z', added_by_user_id: 1 };
+    seedStore(useTripStore, { trip: buildTrip({ id: 1 }), tripTravelers: [traveler] });
+    const item = buildPackingItem({ id: 50, name: 'Shorts', checked: 0, category: 'Clothing', traveler_id: traveler.id });
     let patchBody: Record<string, unknown> | null = null;
     server.use(
       http.put('/api/trips/1/packing/50', async ({ request }) => {
@@ -271,12 +276,13 @@ describe('PackingListPanel', () => {
         return HttpResponse.json({ item: buildPackingItem({ id: 50, checked: 1 }) });
       })
     );
-    const { container } = render(<PackingListPanel tripId={1} items={[item]} />);
+    render(<PackingListPanel tripId={1} items={[item]} />);
 
-    // The toggle button contains the Square icon for unchecked items
-    const toggleBtn = container.querySelector('svg.lucide-square')?.closest('button');
-    expect(toggleBtn).toBeTruthy();
-    await user.click(toggleBtn!);
+    // "Alice" also labels the header's traveler filter tab and the nested avatar
+    // inside the chip button — the chip's own toggle is the <button> among the
+    // matches (the filter tab's avatar is a bare <div>, no title on its <button>).
+    const chipButton = screen.getAllByTitle('Alice').find(el => el.tagName === 'BUTTON')!;
+    await user.click(chipButton);
 
     await waitFor(() => expect(patchBody).toMatchObject({ checked: true }));
   });
@@ -420,26 +426,6 @@ describe('PackingListPanel', () => {
     });
   });
 
-  it('FE-COMP-PACKING-032: category assignee button shown when trip members exist', async () => {
-    server.use(
-      http.get('/api/trips/:id/members', () =>
-        HttpResponse.json({
-          owner: { id: 1, username: 'owner', avatar_url: null },
-          members: [{ id: 2, username: 'alice', avatar_url: null }],
-          current_user_id: 1,
-        })
-      )
-    );
-    const item = buildPackingItem({ name: 'Passport', category: 'Documents' });
-    const { container } = render(<PackingListPanel tripId={1} items={[item]} />);
-
-    // UserPlus assignee button should appear in the category header
-    await waitFor(() => {
-      const userPlusBtn = container.querySelector('svg.lucide-user-plus');
-      expect(userPlusBtn).toBeTruthy();
-    });
-  });
-
   it('FE-COMP-PACKING-033: import modal opens and closes', async () => {
     const user = userEvent.setup();
     const { container } = render(<PackingListPanel tripId={1} items={[]} />);
@@ -503,32 +489,6 @@ describe('PackingListPanel', () => {
     await user.keyboard('{Enter}');
 
     await waitFor(() => expect(putBody).toMatchObject({ category: 'Apparel' }));
-  });
-
-  it('FE-COMP-PACKING-036: assignee dropdown opens and lists members when clicked', async () => {
-    server.use(
-      http.get('/api/trips/:id/members', () =>
-        HttpResponse.json({
-          owner: { id: 1, username: 'owner', avatar_url: null },
-          members: [{ id: 2, username: 'alice', avatar_url: null }],
-          current_user_id: 1,
-        })
-      )
-    );
-    const item = buildPackingItem({ name: 'Camera', category: 'Electronics' });
-    const { container } = render(<PackingListPanel tripId={1} items={[item]} />);
-
-    // Wait for members to load, then click the UserPlus button
-    await waitFor(() => {
-      expect(container.querySelector('svg.lucide-user-plus')).toBeTruthy();
-    });
-
-    const userPlusBtn = container.querySelector('svg.lucide-user-plus')?.closest('button');
-    await userEvent.setup().click(userPlusBtn!);
-
-    // Member names appear in the dropdown
-    await screen.findByText('owner');
-    expect(screen.getByText('alice')).toBeInTheDocument();
   });
 
   it('FE-COMP-PACKING-038: import modal - typing text updates import count', async () => {
@@ -848,27 +808,6 @@ describe('PackingListPanel', () => {
     });
   });
 
-  it('FE-COMP-PACKING-050: ArtikelZeile category change picker opens on dot button click', async () => {
-    const user = userEvent.setup();
-    const item = buildPackingItem({ name: 'Camera', category: 'Electronics' });
-    const item2 = buildPackingItem({ name: 'Passport', category: 'Documents' });
-    const { container } = render(<PackingListPanel tripId={1} items={[item, item2]} />);
-
-    // The category change picker is triggered by a small dot button (no title)
-    // It's rendered inside the action buttons group (sm:opacity-0 sm:group-hover:opacity-100)
-    // In jsdom, CSS classes don't apply so the buttons are accessible
-    // The dot button has a circle span inside with category color
-    // Find all buttons with the 'Change Category' title
-    const catChangeBtn = screen.getAllByTitle('Change Category');
-    expect(catChangeBtn.length).toBeGreaterThan(0);
-    await user.click(catChangeBtn[0]);
-
-    // Category picker shows both category names
-    await waitFor(() => {
-      expect(screen.getAllByText('Electronics').length).toBeGreaterThan(0);
-    });
-  });
-
   it('FE-COMP-PACKING-051: bag assignment from picker calls PUT with bag_id', async () => {
     const user = userEvent.setup();
     const itemId = 130;
@@ -1044,61 +983,6 @@ describe('PackingListPanel', () => {
       const input = screen.getByDisplayValue('Jacket');
       expect(input.tagName).toBe('INPUT');
     });
-  });
-
-  it('FE-COMP-PACKING-058: selecting a different category in picker calls PUT with new category', async () => {
-    const itemA = buildPackingItem({ id: 74, name: 'Camera', category: 'Electronics' });
-    const itemB = buildPackingItem({ id: 75, name: 'Passport', category: 'Documents' });
-    let putBody: Record<string, unknown> | null = null;
-    server.use(
-      http.put('/api/trips/1/packing/74', async ({ request }) => {
-        putBody = await request.json() as Record<string, unknown>;
-        return HttpResponse.json({ item: buildPackingItem({ id: 74, category: 'Documents' }) });
-      })
-    );
-    render(<PackingListPanel tripId={1} items={[itemA, itemB]} />);
-
-    // Use fireEvent (no pointer events) to open the category picker — avoids mouseLeave closing picker
-    const catChangeBtns = screen.getAllByTitle('Change Category');
-    fireEvent.click(catChangeBtns[0]);
-
-    // Picker shows available categories — find and click the 'Documents' button (role=button, text=Documents)
-    const docBtn = await screen.findByRole('button', { name: 'Documents' });
-    fireEvent.click(docBtn);
-
-    await waitFor(() => expect(putBody).toMatchObject({ category: 'Documents' }));
-  });
-
-  it('FE-COMP-PACKING-059: clicking member in UserPlus dropdown calls setCategoryAssignees', async () => {
-    let assignBody: Record<string, unknown> | null = null;
-    server.use(
-      http.get('/api/trips/:id/members', () =>
-        HttpResponse.json({
-          owner: { id: 1, username: 'owner', avatar_url: null },
-          members: [{ id: 2, username: 'alice', avatar_url: null }],
-          current_user_id: 1,
-        })
-      ),
-      http.put('/api/trips/1/packing/category-assignees/:cat', async ({ request }) => {
-        assignBody = await request.json() as Record<string, unknown>;
-        return HttpResponse.json({ assignees: [{ user_id: 2, username: 'alice', avatar: null }] });
-      })
-    );
-    const item = buildPackingItem({ name: 'Tripod', category: 'Electronics' });
-    const { container } = render(<PackingListPanel tripId={1} items={[item]} />);
-
-    // Wait for members to load
-    await waitFor(() => expect(container.querySelector('svg.lucide-user-plus')).toBeTruthy());
-
-    // Click UserPlus to open assignee dropdown
-    const userPlusBtn = container.querySelector('svg.lucide-user-plus')?.closest('button');
-    await userEvent.setup().click(userPlusBtn!);
-
-    // Click member 'alice' in dropdown
-    const aliceBtn = await screen.findByRole('button', { name: /alice/i });
-    await userEvent.setup().click(aliceBtn);
-
-    await waitFor(() => expect(assignBody).toMatchObject({ user_ids: [2] }));
   });
 
   it('FE-COMP-PACKING-060: clicking assignee chip removes assignee via setCategoryAssignees', async () => {
@@ -1299,11 +1183,6 @@ describe('PackingListPanel', () => {
       expect(screen.getAllByText('Day Pack').length).toBeGreaterThan(0);
     });
 
-    // Wait for tripMembers to load — UserPlus icon appears in category header when members exist
-    await waitFor(() => {
-      expect(container.querySelector('svg.lucide-user-plus')).toBeTruthy();
-    });
-
     // Find BagCard Plus button by navigating from the bag name span:
     // bag name <span> → header row <div> → outer BagCard <div> → querySelector for dashed button
     const bagNameEl = screen.getAllByText('Day Pack')[0];
@@ -1343,10 +1222,6 @@ describe('PackingListPanel', () => {
     await waitFor(() => {
       expect(screen.getAllByText('Weekend Bag').length).toBeGreaterThan(0);
     });
-    await waitFor(() => {
-      expect(container.querySelector('svg.lucide-user-plus')).toBeTruthy();
-    });
-
     // Find BagCard Plus button within the BagCard's DOM subtree:
     // bag name <span> → header row <div> → outer BagCard <div> → find dashed button
     const bagNameEl = screen.getAllByText('Weekend Bag')[0];

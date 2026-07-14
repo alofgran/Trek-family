@@ -150,4 +150,11 @@ try {
   console.error('[DB] Flight endpoint backfill failed:', err);
 }
 
+try {
+  const { backfillLinkedTravelers } = require('../services/travelerService');
+  backfillLinkedTravelers();
+} catch (err) {
+  console.error('[DB] Linked traveler backfill failed:', err);
+}
+
 export { db, closeDb, reinitialize, getPlaceWithTags, canAccessTrip, isOwner };

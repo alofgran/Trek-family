@@ -213,7 +213,7 @@ const settings: TranslationStrings = {
   'settings.about.supporter.tier.budgetTraveller': 'Budgetresenären',
   'settings.about.supporter.tier.hostelBunkmate': 'Rumskamrat på vandrarhem',
   'settings.about.description':
-    'TREK är en resplanerare som du själv kan driva och som hjälper dig att organisera dina resor från den första idén till det sista minnet. Dagsplanering, budget, packlistor, foton och mycket mer – allt på ett och samma ställe, på din egen server.',
+    'TREK FAMILY är en resplanerare som du själv kan driva och som hjälper dig att organisera dina resor från den första idén till det sista minnet. Dagsplanering, budget, packlistor, foton och mycket mer – allt på ett och samma ställe, på din egen server.',
   'settings.about.madeWith': 'Gjord med',
   'settings.about.madeBy': 'av Maurice och en växande open source-gemenskap.',
   'settings.username': 'Användarnamn',
@@ -314,7 +314,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': 'Aktivera endast för en betrodd instans i ditt eget nätverk.',
   'settings.airtrail.writeBack': 'Skriv tillbaka ändringarna till AirTrail',
   'settings.airtrail.writeBackHint':
-    'Avstängt som standard: AirTrail är den primära källan och TREK läser endast från den. Aktivera funktionen för att skicka ändringar som gjorts i TREK tillbaka till AirTrail.',
+    'Avstängt som standard: AirTrail är den primära källan och TREK FAMILY läser endast från den. Aktivera funktionen för att skicka ändringar som gjorts i TREK FAMILY tillbaka till AirTrail.',
   'settings.airtrail.connected': 'Ansluten',
   'settings.airtrail.notConnected': 'Inte ansluten',
   'settings.airtrail.toast.saved': 'AirTrail anslutning sparad',

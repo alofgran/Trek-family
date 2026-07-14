@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const br: NotificationLocale = {
   email: {
-    footer: 'Você recebeu isso porque tem as notificações ativadas no TREK.',
+    footer: 'Você recebeu isso porque tem as notificações ativadas no TREK FAMILY.',
     manage: 'Gerenciar preferências nas configurações',
     madeWith: 'Made with',
-    openTrek: 'Abrir TREK',
+    openTrek: 'Abrir TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const br: NotificationLocale = {
       title: `Tarefa com vencimento: ${p.todo}`,
       body: `"${p.todo}" em "${p.trip}" vence em ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Documento a vencer: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} para "${p.trip}" vence em ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Viajante pode ter mudado de faixa etária: ${p.traveler}`,
+      body: `${p.traveler} já tem idade para ser ${p.newType} em vez de ${p.oldType}. Atualize em Configurações se estiver certo.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Reserva de transporte ausente: ${p.trip}`,
+      body: `${p.travelers} pode não ter transporte reservado ainda para "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Convite Vacay Fusion',
-      body: `${p.actor} convidou você para fundir planos de férias. Abra o TREK para aceitar ou recusar.`,
+      body: `${p.actor} convidou você para fundir planos de férias. Abra o TREK FAMILY para aceitar ou recusar.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} fotos compartilhadas`,
@@ -52,7 +64,7 @@ const br: NotificationLocale = {
   passwordReset: {
     subject: 'Redefinir sua senha',
     greeting: 'Olá',
-    body: 'Recebemos um pedido para redefinir a senha da sua conta TREK. Clique no botão abaixo para definir uma nova senha.',
+    body: 'Recebemos um pedido para redefinir a senha da sua conta TREK FAMILY. Clique no botão abaixo para definir uma nova senha.',
     ctaIntro: 'Redefinir senha',
     expiry: 'Este link expira em 60 minutos.',
     ignore: 'Se você não solicitou isto, pode ignorar este e-mail — sua senha não será alterada.',

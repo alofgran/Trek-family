@@ -218,7 +218,7 @@ const settings: TranslationStrings = {
   'settings.about.supporter.tier.budgetTraveller': 'Οικονομικός Ταξιδιώτης',
   'settings.about.supporter.tier.hostelBunkmate': 'Συγκάτοικος Hostel',
   'settings.about.description':
-    'Το TREK είναι ένας self-hosted ταξιδιωτικός σχεδιαστής που σας βοηθά να οργανώσετε τα ταξίδια σας από την πρώτη ιδέα μέχρι την τελευταία ανάμνηση. Σχεδιασμός ημερών, προϋπολογισμός, λίστες πακεταρίσματος, φωτογραφίες και πολλά άλλα — όλα σε ένα μέρος, στον δικό σας server.',
+    'Το TREK FAMILY είναι ένας self-hosted ταξιδιωτικός σχεδιαστής που σας βοηθά να οργανώσετε τα ταξίδια σας από την πρώτη ιδέα μέχρι την τελευταία ανάμνηση. Σχεδιασμός ημερών, προϋπολογισμός, λίστες πακεταρίσματος, φωτογραφίες και πολλά άλλα — όλα σε ένα μέρος, στον δικό σας server.',
   'settings.about.madeWith': 'Φτιαγμένο με',
   'settings.about.madeBy': 'από τον Maurice και μια αναπτυσσόμενη κοινότητα open-source.',
   'settings.username': 'Όνομα χρήστη',
@@ -326,7 +326,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': 'Ενεργοποιήστε το μόνο για μια αξιόπιστη εγκατάσταση στο δικό σας δίκτυο.',
   'settings.airtrail.writeBack': 'Εγγραφή αλλαγών πίσω στο AirTrail',
   'settings.airtrail.writeBackHint':
-    'Απενεργοποιημένο από προεπιλογή: το AirTrail είναι η πηγή αλήθειας και το TREK μόνο διαβάζει από αυτό. Ενεργοποιήστε το για να στέλνετε πίσω στο AirTrail τις αλλαγές που κάνετε στο TREK.',
+    'Απενεργοποιημένο από προεπιλογή: το AirTrail είναι η πηγή αλήθειας και το TREK FAMILY μόνο διαβάζει από αυτό. Ενεργοποιήστε το για να στέλνετε πίσω στο AirTrail τις αλλαγές που κάνετε στο TREK FAMILY.',
   'settings.airtrail.connected': 'Συνδέθηκε',
   'settings.airtrail.notConnected': 'Δεν συνδέθηκε',
   'settings.airtrail.toast.saved': 'Η σύνδεση με το AirTrail αποθηκεύτηκε',

@@ -1,12 +1,15 @@
 // FE-COMP-RES-001 to FE-COMP-RES-040
 import { render, screen, waitFor, within } from '../../../tests/helpers/render';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
+import { server } from '../../../tests/helpers/msw/server';
 import { useAuthStore } from '../../store/authStore';
 import { useTripStore } from '../../store/tripStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { usePermissionsStore } from '../../store/permissionsStore';
 import { resetAllStores, seedStore } from '../../../tests/helpers/store';
 import { buildUser, buildTrip, buildReservation, buildDay, buildPlace } from '../../../tests/helpers/factories';
+import type { Reservation } from '../../types';
 import ReservationsPanel from './ReservationsPanel';
 
 vi.mock('../../api/authUrl', () => ({ getAuthUrl: vi.fn().mockResolvedValue('http://test/file') }));
@@ -129,6 +132,48 @@ describe('ReservationsPanel', () => {
     const editBtn = screen.getByTitle('Edit');
     await user.click(editBtn);
     expect(onEdit).toHaveBeenCalledWith(expect.objectContaining({ id: 77 }));
+  });
+
+  it('FE-COMP-RES-014b: copy button shows a "Copy" tooltip, not a raw i18n key', () => {
+    const res = buildReservation({ id: 78, title: 'Copyable Res', type: 'hotel', status: 'confirmed' });
+    render(<ReservationsPanel {...defaultProps} reservations={[res]} />);
+    expect(screen.getByTitle('Copy')).toBeInTheDocument();
+    expect(screen.queryByTitle('common.duplicate')).not.toBeInTheDocument();
+  });
+
+  it('FE-COMP-RES-014c: duplicating a flight carries metadata over as an object, not a double-encoded string', async () => {
+    const user = userEvent.setup();
+    let capturedBody: Record<string, unknown> | null = null;
+    server.use(
+      http.post('/api/trips/1/reservations', async ({ request }) => {
+        capturedBody = await request.json() as Record<string, unknown>;
+        return HttpResponse.json({ reservation: buildReservation({ id: 999, ...capturedBody }) });
+      }),
+    );
+    // metadata arrives from the real API as a JSON string, exactly like listReservations returns it.
+    const res = buildReservation({
+      id: 79, title: 'DL123', type: 'flight', status: 'confirmed', day_id: 5,
+      metadata: JSON.stringify({ airline: 'Delta', flight_number: 'DL123', seat: '14A' }) as unknown as Reservation['metadata'],
+    });
+    render(<ReservationsPanel {...defaultProps} reservations={[res]} />);
+    await user.click(screen.getByTitle('Copy'));
+
+    await waitFor(() => expect(capturedBody).not.toBeNull());
+    expect(typeof capturedBody!.metadata).toBe('object');
+    expect(capturedBody!.metadata).toEqual({ airline: 'Delta', flight_number: 'DL123', seat: '14A' });
+    expect(capturedBody!.day_id).toBe(5);
+  });
+
+  it('FE-COMP-RES-014d: passenger chips render under a labeled "Passengers" section', async () => {
+    const res = buildReservation({ id: 80, title: 'Family Flight', type: 'flight', status: 'confirmed' });
+    server.use(
+      http.get('/api/trips/1/reservation-travelers', () =>
+        HttpResponse.json({ travelers: { 80: [{ id: 1, name: 'Lucy', color: '#64cef2', type: 'child' }] } })
+      ),
+    );
+    render(<ReservationsPanel {...defaultProps} reservations={[res]} />);
+    await waitFor(() => expect(screen.getByText('Lucy')).toBeInTheDocument());
+    expect(screen.getByText('Passengers')).toBeInTheDocument();
   });
 
   it('FE-COMP-RES-015: delete button opens confirm dialog, then calls onDelete', async () => {

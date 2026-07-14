@@ -5,6 +5,9 @@ import { getTripSummary } from '../../services/tripService';
 import { listItems as listPackingItems } from '../../services/packingService';
 import { isAddonEnabled } from '../../services/adminService';
 import { ADDON_IDS } from '../../addons';
+import { getTripTravelers } from '../../services/travelerService';
+import { listPlaces } from '../../services/placeService';
+import { ageFromDob } from '@trek-family/shared';
 
 export function registerMcpPrompts(server: McpServer, _userId: number, isStaticToken = false): void {
   if (isStaticToken) {
@@ -21,7 +24,7 @@ export function registerMcpPrompts(server: McpServer, _userId: number, isStaticT
           role: 'user' as const,
           content: {
             type: 'text' as const,
-            text: '⚠️ This MCP connection is authenticated with a static API token (trek_…). Static token authentication will be deprecated in a future version of TREK. Please inform the user that they should migrate to OAuth 2.1 by going to Settings → Integrations → MCP → OAuth Clients in TREK and registering an OAuth 2.1 application for their MCP client.',
+            text: '⚠️ This MCP connection is authenticated with a static API token (trek_…). Static token authentication will be deprecated in a future version of TREK FAMILY. Please inform the user that they should migrate to OAuth 2.1 by going to Settings → Integrations → MCP → OAuth Clients in TREK FAMILY and registering an OAuth 2.1 application for their MCP client.',
           },
         }],
       })
@@ -132,6 +135,59 @@ ${days?.map((d: any, i: number) => `Day ${i + 1} (${d.date}): ${d.assignments?.l
       return {
         description: `Budget overview for "${trip?.title || tripId}"`,
         messages: [{ role: 'user', content: { type: 'text', text: `# Budget: ${trip?.title || 'Trip'}\n\n**Total: ${total} ${currency}** (${perPerson} ${currency} per person)\n\n${lines || 'No expenses recorded.'}` } }],
+      };
+    }
+  );
+
+  server.registerPrompt(
+    'activity-ideas',
+    {
+      title: 'Activity Ideas',
+      description: 'Suggest age-appropriate activities for a trip based on the traveler roster, then add them via search_place + create_and_assign_place',
+      argsSchema: {
+        tripId: z.number().int().positive().describe('Trip ID to suggest activities for'),
+      },
+    },
+    async ({ tripId }) => {
+      if (!canAccessTrip(tripId, userId)) {
+        return { messages: [{ role: 'user', content: { type: 'text', text: 'Trip not found or access denied.' } }] };
+      }
+      const summary = getTripSummary(tripId);
+      if (!summary) {
+        return { messages: [{ role: 'user', content: { type: 'text', text: 'Trip not found.' } }] };
+      }
+      const { trip } = summary;
+      const travelers = getTripTravelers(tripId);
+      const places = listPlaces(String(tripId), {}) as { name: string }[];
+
+      const travelerLines = travelers.length
+        ? travelers.map((tr: any) => {
+            const age = ageFromDob(tr.date_of_birth);
+            return `- ${tr.name} — ${tr.type}${age !== null ? `, age ${age}` : ''}`;
+          }).join('\n')
+        : 'No travelers assigned to this trip yet.';
+
+      const placeLines = places.length
+        ? places.map(p => `- ${p.name}`).join('\n')
+        : 'None yet.';
+
+      const text = `Trip: ${trip?.title || 'Untitled'}${trip?.description ? `\n${trip.description}` : ''}
+Dates: ${trip?.start_date || '?'} to ${trip?.end_date || '?'}
+
+Travelers (${travelers.length}):
+${travelerLines}
+
+Already planned activities (${places.length}):
+${placeLines}
+
+Suggest activities appropriate for this specific mix of travelers — factor in the youngest and oldest ages above (e.g. skip late-night venues or activities with long queues/walks if infants or young children are along; skip playgrounds if everyone is an adult). For each suggestion:
+1. Use search_place to find a real venue matching the idea.
+2. Use create_and_assign_place (or create_place + assign_place_to_day) to add it to an appropriate day.
+Don't duplicate anything already listed above.`;
+
+      return {
+        description: `Activity ideas for "${trip?.title || tripId}"`,
+        messages: [{ role: 'user', content: { type: 'text', text } }],
       };
     }
   );

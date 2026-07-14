@@ -207,7 +207,7 @@ const admin: TranslationStrings = {
   'admin.tabs.addons': 'Πρόσθετα',
   'admin.addons.title': 'Πρόσθετα',
   'admin.addons.subtitle':
-    'Ενεργοποιήστε ή απενεργοποιήστε λειτουργίες για να εξατομικεύσετε την εμπειρία σας στο TREK.',
+    'Ενεργοποιήστε ή απενεργοποιήστε λειτουργίες για να εξατομικεύσετε την εμπειρία σας στο TREK FAMILY.',
   'admin.addons.catalog.packing.name': 'Λίστες',
   'admin.addons.catalog.packing.description': 'Λίστες πακεταρίσματος και εργασίες προς εκτέλεση για τα ταξίδια σας',
   'admin.addons.catalog.budget.name': 'Προϋπολογισμός',
@@ -244,7 +244,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'Δεδομένα Καιρού',
   'admin.weather.badge': 'Από 24 Μαρτίου 2026',
   'admin.weather.description':
-    'Το TREK χρησιμοποιεί το Open-Meteo ως πηγή δεδομένων καιρού. Το Open-Meteo είναι μια δωρεάν, ανοιχτού κώδικα υπηρεσία καιρού — δεν απαιτείται κλειδί API.',
+    'Το TREK FAMILY χρησιμοποιεί το Open-Meteo ως πηγή δεδομένων καιρού. Το Open-Meteo είναι μια δωρεάν, ανοιχτού κώδικα υπηρεσία καιρού — δεν απαιτείται κλειδί API.',
   'admin.weather.forecast': 'Πρόγνωση 16 ημερών',
   'admin.weather.forecastDesc': 'Προηγουμένως 5 ημέρες (OpenWeatherMap)',
   'admin.weather.climate': 'Ιστορικά δεδομένα κλίματος',

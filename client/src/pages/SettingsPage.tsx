@@ -1,5 +1,5 @@
 import React from 'react'
-import { Settings, Palette, Map, Bell, Plug, CloudOff, User, Info } from 'lucide-react'
+import { Settings, Palette, Map, Bell, Plug, CloudOff, User, Info, Users2 } from 'lucide-react'
 import { useTranslation } from '../i18n'
 import PageShell from '../components/Layout/PageShell'
 import PageSidebar, { type PageSidebarTab } from '../components/Layout/PageSidebar'
@@ -10,6 +10,7 @@ import IntegrationsTab from '../components/Settings/IntegrationsTab'
 import AccountTab from '../components/Settings/AccountTab'
 import AboutTab from '../components/Settings/AboutTab'
 import OfflineTab from '../components/Settings/OfflineTab'
+import TravelersSettingsTab from '../components/Settings/TravelersSettingsTab'
 import { useSettings } from './settings/useSettings'
 
 export default function SettingsPage(): React.ReactElement {
@@ -26,6 +27,7 @@ export default function SettingsPage(): React.ReactElement {
       : []),
     { id: 'offline', label: t('settings.tabs.offline'), icon: CloudOff },
     { id: 'account', label: t('settings.tabs.account'), icon: User },
+    { id: 'travelers', label: t('settings.tabs.travelers'), icon: Users2 },
     ...(appVersion
       ? [{ id: 'about', label: t('settings.tabs.about'), icon: Info }]
       : []),
@@ -59,6 +61,7 @@ export default function SettingsPage(): React.ReactElement {
             {activeTab === 'integrations' && hasIntegrations && <IntegrationsTab />}
             {activeTab === 'offline' && <OfflineTab />}
             {activeTab === 'account' && <AccountTab />}
+            {activeTab === 'travelers' && <TravelersSettingsTab />}
             {activeTab === 'about' && appVersion && <AboutTab appVersion={appVersion} />}
           </PageSidebar>
         </div>

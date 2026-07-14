@@ -26,7 +26,7 @@ const login: TranslationStrings = {
   'login.signingIn': 'Loggar in…',
   'login.signIn': 'Logga in',
   'login.createAdmin': 'Skapa administratörskonto',
-  'login.createAdminHint': 'Skapa det första administratörskontot för TREK.',
+  'login.createAdminHint': 'Skapa det första administratörskontot för TREK FAMILY.',
   'login.setNewPassword': 'Ställ in nytt lösenord',
   'login.setNewPasswordHint': 'Du måste byta lösenord innan du fortsätter.',
   'login.createAccount': 'Skapa konto',

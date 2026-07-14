@@ -178,7 +178,7 @@ const settings: TranslationStrings = {
   'settings.about.supporter.tier.budgetTraveller': 'Budget Traveller',
   'settings.about.supporter.tier.hostelBunkmate': 'Hostel Bunkmate',
   'settings.about.description':
-    'TREK — це self-hosted планувальник подорожей, який допомагає організувати поїздки від першої ідеї до останнього спогаду. Планування по днях, бюджет, списки речей, фото та багато іншого — все в одному місці, на вашому власному сервері.',
+    'TREK FAMILY — це self-hosted планувальник подорожей, який допомагає організувати поїздки від першої ідеї до останнього спогаду. Планування по днях, бюджет, списки речей, фото та багато іншого — все в одному місці, на вашому власному сервері.',
   'settings.about.madeWith': 'Зроблено з',
   'settings.about.madeBy': 'Морісом і зростаючою open-source спільнотою.',
   'settings.username': "Ім'я користувача",
@@ -319,7 +319,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': 'Вмикайте лише для довіреного екземпляра у вашій власній мережі.',
   'settings.airtrail.writeBack': 'Записувати зміни назад у AirTrail',
   'settings.airtrail.writeBackHint':
-    'Типово вимкнено: AirTrail є джерелом істини, а TREK лише читає з нього. Увімкніть, щоб надсилати зміни, зроблені в TREK, назад до AirTrail.',
+    'Типово вимкнено: AirTrail є джерелом істини, а TREK FAMILY лише читає з нього. Увімкніть, щоб надсилати зміни, зроблені в TREK FAMILY, назад до AirTrail.',
   'settings.airtrail.connected': 'Підключено',
   'settings.airtrail.notConnected': 'Не підключено',
   'settings.airtrail.toast.saved': 'Підключення AirTrail збережено',

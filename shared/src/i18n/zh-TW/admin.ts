@@ -194,7 +194,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': '儲存失敗',
   'admin.tabs.addons': '擴充套件',
   'admin.addons.title': '擴充套件',
-  'admin.addons.subtitle': '啟用或停用功能以自定義你的 TREK 體驗。',
+  'admin.addons.subtitle': '啟用或停用功能以自定義你的 TREK FAMILY 體驗。',
   'admin.addons.catalog.memories.name': '照片 (Immich)',
   'admin.addons.catalog.memories.description': '透過 Immich 例項分享旅行照片',
   'admin.addons.catalog.mcp.name': 'MCP',
@@ -227,7 +227,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': '天氣資料',
   'admin.weather.badge': '自 2026 年 3 月 24 日起',
   'admin.weather.description':
-    'TREK 使用 Open-Meteo 作為天氣資料來源。Open-Meteo 是免費的開源天氣服務——無需 API 金鑰。',
+    'TREK FAMILY 使用 Open-Meteo 作為天氣資料來源。Open-Meteo 是免費的開源天氣服務——無需 API 金鑰。',
   'admin.weather.forecast': '16 天天氣預報',
   'admin.weather.forecastDesc': '之前為 5 天 (OpenWeatherMap)',
   'admin.weather.climate': '歷史氣候資料',

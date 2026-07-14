@@ -207,14 +207,16 @@ export class BudgetController {
     @Param('tripId') tripId: string,
     @Param('id') id: string,
     @Body('user_ids') userIds: unknown,
+    @Body('member_entries') memberEntries: unknown,
     @Headers('x-socket-id') socketId?: string,
   ) {
     const trip = this.requireTrip(tripId, user);
     this.requireEdit(trip, user);
-    if (!Array.isArray(userIds)) {
-      throw new HttpException({ error: 'user_ids must be an array' }, 400);
+    const entries = Array.isArray(memberEntries) ? memberEntries : (Array.isArray(userIds) ? userIds : null);
+    if (!entries) {
+      throw new HttpException({ error: 'user_ids or member_entries must be an array' }, 400);
     }
-    const result = this.budget.updateMembers(id, tripId, userIds);
+    const result = this.budget.updateMembers(id, tripId, entries);
     if (!result) {
       throw new HttpException({ error: 'Budget item not found' }, 404);
     }
@@ -235,7 +237,7 @@ export class BudgetController {
     if (!Array.isArray(payers)) {
       throw new HttpException({ error: 'payers must be an array' }, 400);
     }
-    const item = this.budget.setPayers(id, tripId, payers as { user_id: number; amount: number }[]);
+    const item = this.budget.setPayers(id, tripId, payers as { user_id: number; traveler_id?: number | null; amount: number }[]);
     if (!item) {
       throw new HttpException({ error: 'Budget item not found' }, 404);
     }

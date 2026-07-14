@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const zh: NotificationLocale = {
   email: {
-    footer: '您收到此邮件是因为您在 TREK 中启用了通知。',
+    footer: '您收到此邮件是因为您在 TREK FAMILY 中启用了通知。',
     manage: '管理偏好设置',
     madeWith: 'Made with',
-    openTrek: '打开 TREK',
+    openTrek: '打开 TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const zh: NotificationLocale = {
       title: `待办事项即将到期：${p.todo}`,
       body: `"${p.trip}" 中的"${p.todo}"将于 ${p.due} 到期。`,
     }),
+    document_expiry: (p) => ({
+      title: `文件即将到期：${p.documentType}`,
+      body: `${p.traveler ? `（${p.traveler}）` : ''}用于"${p.trip}"的${p.documentType}将于 ${p.expiry} 到期。`,
+    }),
+    age_band_update: (p) => ({
+      title: `旅伴可能已进入新的年龄段：${p.traveler}`,
+      body: `${p.traveler} 现在的年龄适合归类为 ${p.newType} 而非 ${p.oldType}。如果正确，请在设置中更新。`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `缺少交通预订：${p.trip}`,
+      body: `${p.travelers} 可能还没有预订"${p.trip}"的交通。`,
+    }),
     vacay_invite: (p) => ({
       title: 'Vacay 融合邀请',
-      body: `${p.actor} 邀请你合并假期计划。打开 TREK 接受或拒绝。`,
+      body: `${p.actor} 邀请你合并假期计划。打开 TREK FAMILY 接受或拒绝。`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} 张照片已分享`,
@@ -52,7 +64,7 @@ const zh: NotificationLocale = {
   passwordReset: {
     subject: '重置您的密码',
     greeting: '您好',
-    body: '我们收到了重置您的 TREK 账户密码的请求。点击下方按钮设置新密码。',
+    body: '我们收到了重置您的 TREK FAMILY 账户密码的请求。点击下方按钮设置新密码。',
     ctaIntro: '重置密码',
     expiry: '此链接将在 60 分钟后失效。',
     ignore: '如果这不是您本人的请求，可以忽略本邮件 — 您的密码不会改变。',

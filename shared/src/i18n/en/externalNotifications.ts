@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const en: NotificationLocale = {
   email: {
-    footer: 'You received this because you have notifications enabled in TREK.',
+    footer: 'You received this because you have notifications enabled in TREK FAMILY.',
     manage: 'Manage preferences in Settings',
     madeWith: 'Made with',
-    openTrek: 'Open TREK',
+    openTrek: 'Open TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const en: NotificationLocale = {
       title: `To-do due: ${p.todo}`,
       body: `"${p.todo}" in "${p.trip}" is due on ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Document expiring soon: ${p.documentType}`,
+      body: `${p.traveler ? `${p.traveler}'s ` : ''}${p.documentType} for "${p.trip}" expires on ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Traveler may have aged into a new group: ${p.traveler}`,
+      body: `${p.traveler} is now old enough to be ${p.newType} instead of ${p.oldType}. Update in Settings if that's right.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Missing transport booking: ${p.trip}`,
+      body: `${p.travelers} may not have transport booked yet for "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Vacay Fusion Invite',
-      body: `${p.actor} invited you to fuse vacation plans. Open TREK to accept or decline.`,
+      body: `${p.actor} invited you to fuse vacation plans. Open TREK FAMILY to accept or decline.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} photos shared`,
@@ -52,7 +64,7 @@ const en: NotificationLocale = {
   passwordReset: {
     subject: 'Reset your password',
     greeting: 'Hi',
-    body: 'We received a request to reset the password for your TREK account. Click the button below to set a new password.',
+    body: 'We received a request to reset the password for your TREK FAMILY account. Click the button below to set a new password.',
     ctaIntro: 'Reset password',
     expiry: 'This link expires in 60 minutes.',
     ignore: "If you didn't request this, you can safely ignore this email — your password won't change.",

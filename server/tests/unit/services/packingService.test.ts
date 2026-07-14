@@ -143,7 +143,7 @@ describe('applyTemplate', () => {
     expect(items.map((i: any) => i.name)).toContain('Sleeping Bag');
   });
 
-  it('PACK-SVC-004: returns null when template has no items', () => {
+  it('PACK-SVC-004: returns undefined when template has no items configured (distinct from null for a missing template, and from [] for a successful no-op apply)', () => {
     const { user } = createUser(testDb);
     const trip = createTrip(testDb, user.id);
 
@@ -152,7 +152,63 @@ describe('applyTemplate', () => {
 
     const result = applyTemplate(trip.id, templateId);
 
+    expect(result).toBeUndefined();
+  });
+
+  it('PACK-SVC-004b: returns null when the template does not exist at all', () => {
+    const { user } = createUser(testDb);
+    const trip = createTrip(testDb, user.id);
+
+    const result = applyTemplate(trip.id, 999999);
+
     expect(result).toBeNull();
+  });
+
+  it('PACK-SVC-004c: applying the same template twice does not duplicate items already tagged to a traveler', () => {
+    const { user } = createUser(testDb);
+    const trip = createTrip(testDb, user.id);
+    const traveler = testDb.prepare(
+      'INSERT INTO travelers (managed_by_user_id, name, type) VALUES (?, ?, ?)'
+    ).run(user.id, 'Lucy', 'child');
+
+    const tpl = testDb.prepare('INSERT INTO packing_templates (name, created_by) VALUES (?, ?)').run('Beach', user.id);
+    const templateId = tpl.lastInsertRowid as number;
+    const cat = testDb.prepare('INSERT INTO packing_template_categories (template_id, name, sort_order) VALUES (?, ?, 0)').run(templateId, 'Clothes');
+    testDb.prepare('INSERT INTO packing_template_items (category_id, name, sort_order) VALUES (?, ?, 0)').run(cat.lastInsertRowid, 'Sunscreen');
+
+    const first = applyTemplate(trip.id, templateId, [traveler.lastInsertRowid as number]);
+    expect(first.length).toBe(1);
+
+    const second = applyTemplate(trip.id, templateId, [traveler.lastInsertRowid as number]);
+    expect(second.length).toBe(0);
+
+    const rows = testDb.prepare('SELECT * FROM packing_items WHERE trip_id = ? AND traveler_id = ?').all(trip.id, traveler.lastInsertRowid);
+    expect(rows.length).toBe(1);
+  });
+
+  it('PACK-SVC-004d: re-applying with an additional traveler adds only the new traveler, skipping the one already tagged', () => {
+    const { user } = createUser(testDb);
+    const trip = createTrip(testDb, user.id);
+    const lucy = testDb.prepare('INSERT INTO travelers (managed_by_user_id, name, type) VALUES (?, ?, ?)').run(user.id, 'Lucy', 'child');
+    const alex = testDb.prepare('INSERT INTO travelers (managed_by_user_id, name, type) VALUES (?, ?, ?)').run(user.id, 'Alex', 'adult');
+
+    const tpl = testDb.prepare('INSERT INTO packing_templates (name, created_by) VALUES (?, ?)').run('Beach', user.id);
+    const templateId = tpl.lastInsertRowid as number;
+    const cat = testDb.prepare('INSERT INTO packing_template_categories (template_id, name, sort_order) VALUES (?, ?, 0)').run(templateId, 'Clothes');
+    testDb.prepare('INSERT INTO packing_template_items (category_id, name, sort_order) VALUES (?, ?, 0)').run(cat.lastInsertRowid, 'Sunscreen');
+
+    const first = applyTemplate(trip.id, templateId, [lucy.lastInsertRowid as number]);
+    expect(first.length).toBe(1);
+
+    // Re-apply with both travelers: Lucy already has it (skip), Alex is new (add).
+    const second = applyTemplate(trip.id, templateId, [lucy.lastInsertRowid as number, alex.lastInsertRowid as number]);
+    expect(second.length).toBe(1);
+    expect((second[0] as { traveler_id: number }).traveler_id).toBe(alex.lastInsertRowid);
+
+    const lucyRows = testDb.prepare('SELECT * FROM packing_items WHERE trip_id = ? AND traveler_id = ?').all(trip.id, lucy.lastInsertRowid);
+    const alexRows = testDb.prepare('SELECT * FROM packing_items WHERE trip_id = ? AND traveler_id = ?').all(trip.id, alex.lastInsertRowid);
+    expect(lucyRows.length).toBe(1);
+    expect(alexRows.length).toBe(1);
   });
 });
 

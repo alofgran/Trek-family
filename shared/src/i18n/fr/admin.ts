@@ -161,7 +161,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': 'Erreur de sauvegarde',
   'admin.tabs.addons': 'Extensions',
   'admin.addons.title': 'Extensions',
-  'admin.addons.subtitle': 'Activez ou désactivez des fonctionnalités pour personnaliser votre expérience TREK.',
+  'admin.addons.subtitle': 'Activez ou désactivez des fonctionnalités pour personnaliser votre expérience TREK FAMILY.',
   'admin.addons.catalog.memories.name': 'Photos (Immich)',
   'admin.addons.catalog.memories.description': 'Partagez vos photos de voyage via votre instance Immich',
   'admin.addons.catalog.mcp.name': 'MCP',
@@ -194,7 +194,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'Données météo',
   'admin.weather.badge': 'Depuis le 24 mars 2026',
   'admin.weather.description':
-    'TREK utilise Open-Meteo comme source de données météo. Open-Meteo est un service météo gratuit et open source — aucune clé API requise.',
+    'TREK FAMILY utilise Open-Meteo comme source de données météo. Open-Meteo est un service météo gratuit et open source — aucune clé API requise.',
   'admin.weather.forecast': 'Prévisions sur 16 jours',
   'admin.weather.forecastDesc': 'Auparavant 5 jours (OpenWeatherMap)',
   'admin.weather.climate': 'Données climatiques historiques',

@@ -7,5 +7,6 @@ import { FeaturesController } from './features.controller';
 @Module({
   controllers: [BookingImportController, FeaturesController],
   providers: [BookingImportService, KitineraryExtractorService],
+  exports: [BookingImportService],
 })
 export class BookingImportModule {}

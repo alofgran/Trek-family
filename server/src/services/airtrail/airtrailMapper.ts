@@ -1,6 +1,6 @@
 import * as crypto from 'node:crypto';
 import type { AirtrailAirport, AirtrailFlightRaw, AirtrailNamedCode } from './airtrailClient';
-import type { AirtrailFlight } from '@trek/shared';
+import type { AirtrailFlight } from '@trek-family/shared';
 
 /** Preferred display/lookup code for an airport. */
 function airportCode(a: AirtrailAirport | null): string | null {

@@ -314,7 +314,7 @@ describe('GET /api/auth/oidc/exchange', () => {
     const cookieHeader = Array.isArray(res.headers['set-cookie'])
       ? res.headers['set-cookie'].join(';')
       : res.headers['set-cookie'];
-    expect(cookieHeader).toContain('trek_session');
+    expect(cookieHeader).toContain('trek_family_session');
   });
 
   it('OIDC-012: missing code returns 400', async () => {

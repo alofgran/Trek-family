@@ -82,12 +82,33 @@ const EVENT_NOTIFICATION_CONFIG: Record<string, EventNotifConfig> = {
     navigateTextKey: 'notif.action.view_trip',
     navigateTarget: p => (p.tripId ? `/trips/${p.tripId}` : null),
   },
+  missing_traveler_transport: {
+    inAppType: 'navigate',
+    titleKey: 'notif.missing_traveler_transport.title',
+    textKey: 'notif.missing_traveler_transport.text',
+    navigateTextKey: 'notif.action.view_trip',
+    navigateTarget: p => (p.tripId ? `/trips/${p.tripId}` : null),
+  },
   todo_due: {
     inAppType: 'navigate',
     titleKey: 'notif.todo_due.title',
     textKey: 'notif.todo_due.text',
     navigateTextKey: 'notif.action.view_trip',
     navigateTarget: p => (p.tripId ? `/trips/${p.tripId}` : null),
+  },
+  document_expiry: {
+    inAppType: 'navigate',
+    titleKey: 'notif.document_expiry.title',
+    textKey: 'notif.document_expiry.text',
+    navigateTextKey: 'notif.action.view_trip',
+    navigateTarget: p => (p.tripId ? `/trips/${p.tripId}` : null),
+  },
+  age_band_update: {
+    inAppType: 'navigate',
+    titleKey: 'notif.age_band_update.title',
+    textKey: 'notif.age_band_update.text',
+    navigateTextKey: 'notif.action.view_travelers',
+    navigateTarget: () => '/settings',
   },
   vacay_invite: {
     inAppType: 'navigate',

@@ -3071,6 +3071,262 @@ function runMigrations(db: Database.Database): void {
         if (!err.message?.includes('duplicate column name')) throw err;
       }
     },
+    // Travelers feature: global per-user traveler roster + trip, reservation,
+    // packing, todo, assignment, budget extensions.
+    () => {
+      // New tables
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS travelers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          managed_by_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          linked_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          avatar TEXT,
+          color TEXT,
+          type TEXT DEFAULT 'adult',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(linked_user_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS trip_travelers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          trip_id INTEGER NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+          traveler_id INTEGER NOT NULL REFERENCES travelers(id) ON DELETE CASCADE,
+          added_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+          added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(trip_id, traveler_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS reservation_travelers (
+          reservation_id INTEGER NOT NULL REFERENCES reservations(id) ON DELETE CASCADE,
+          traveler_id INTEGER NOT NULL REFERENCES travelers(id) ON DELETE CASCADE,
+          PRIMARY KEY (reservation_id, traveler_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS packing_template_traveler_affiliations (
+          template_id INTEGER NOT NULL REFERENCES packing_templates(id) ON DELETE CASCADE,
+          traveler_id INTEGER NOT NULL REFERENCES travelers(id) ON DELETE CASCADE,
+          PRIMARY KEY (template_id, traveler_id)
+        );
+      `);
+
+      // Alter existing tables — all new columns nullable so existing code is unaffected
+      try {
+        db.exec('ALTER TABLE packing_items ADD COLUMN traveler_id INTEGER REFERENCES travelers(id) ON DELETE SET NULL');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+      try {
+        db.exec('ALTER TABLE todo_items ADD COLUMN assigned_traveler_id INTEGER REFERENCES travelers(id) ON DELETE SET NULL');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+      try {
+        db.exec('ALTER TABLE assignment_participants ADD COLUMN traveler_id INTEGER REFERENCES travelers(id) ON DELETE SET NULL');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+      try {
+        db.exec("ALTER TABLE packing_templates ADD COLUMN is_personal INTEGER DEFAULT 0");
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+
+      // Recreate budget_item_members to drop UNIQUE(budget_item_id, user_id)
+      // and replace with UNIQUE(budget_item_id, user_id, traveler_id).
+      // SQLite cannot DROP CONSTRAINT; table recreation is the only option.
+      const bimInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='budget_item_members'").get() as { sql: string } | undefined;
+      if (bimInfo) {
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS budget_item_members_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            budget_item_id INTEGER NOT NULL REFERENCES budget_items(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            paid INTEGER NOT NULL DEFAULT 0,
+            traveler_id INTEGER REFERENCES travelers(id) ON DELETE SET NULL,
+            UNIQUE(budget_item_id, user_id, traveler_id)
+          );
+          INSERT OR IGNORE INTO budget_item_members_new (id, budget_item_id, user_id, paid)
+            SELECT id, budget_item_id, user_id, paid FROM budget_item_members;
+          DROP TABLE budget_item_members;
+          ALTER TABLE budget_item_members_new RENAME TO budget_item_members;
+          CREATE INDEX IF NOT EXISTS idx_budget_item_members_item ON budget_item_members(budget_item_id);
+          CREATE INDEX IF NOT EXISTS idx_budget_item_members_user ON budget_item_members(user_id);
+        `);
+      }
+
+      // Backfill: create a linked traveler for every existing user
+      const users = db.prepare('SELECT id, username FROM users').all() as { id: number; username: string }[];
+      const insertTraveler = db.prepare(
+        'INSERT OR IGNORE INTO travelers (managed_by_user_id, linked_user_id, name) VALUES (?, ?, ?)'
+      );
+      for (const u of users) {
+        insertTraveler.run(u.id, u.id, u.username);
+      }
+
+      // Backfill trip_travelers from trip_members
+      const members = db.prepare('SELECT trip_id, user_id FROM trip_members').all() as { trip_id: number; user_id: number }[];
+      const insertTT = db.prepare(
+        'INSERT OR IGNORE INTO trip_travelers (trip_id, traveler_id, added_by_user_id) VALUES (?, ?, ?)'
+      );
+      for (const m of members) {
+        const t = db.prepare('SELECT id FROM travelers WHERE linked_user_id = ?').get(m.user_id) as { id: number } | undefined;
+        if (t) insertTT.run(m.trip_id, t.id, m.user_id);
+      }
+
+      // Backfill trip_travelers for trip owners
+      const trips = db.prepare('SELECT id, user_id FROM trips').all() as { id: number; user_id: number }[];
+      for (const tr of trips) {
+        const t = db.prepare('SELECT id FROM travelers WHERE linked_user_id = ?').get(tr.user_id) as { id: number } | undefined;
+        if (t) insertTT.run(tr.id, t.id, tr.user_id);
+      }
+
+      // Backfill assignment_participants.traveler_id
+      const apRows = db.prepare('SELECT id, user_id FROM assignment_participants WHERE traveler_id IS NULL').all() as { id: number; user_id: number }[];
+      for (const row of apRows) {
+        const t = db.prepare('SELECT id FROM travelers WHERE linked_user_id = ?').get(row.user_id) as { id: number } | undefined;
+        if (t) db.prepare('UPDATE assignment_participants SET traveler_id = ? WHERE id = ?').run(t.id, row.id);
+      }
+
+      // Backfill todo_items.assigned_traveler_id
+      const todoRows = db.prepare('SELECT id, assigned_user_id FROM todo_items WHERE assigned_user_id IS NOT NULL AND assigned_traveler_id IS NULL').all() as { id: number; assigned_user_id: number }[];
+      for (const row of todoRows) {
+        const t = db.prepare('SELECT id FROM travelers WHERE linked_user_id = ?').get(row.assigned_user_id) as { id: number } | undefined;
+        if (t) db.prepare('UPDATE todo_items SET assigned_traveler_id = ? WHERE id = ?').run(t.id, row.id);
+      }
+
+      // packing_items never had assigned_user_id — traveler_id starts as NULL for all existing rows
+
+      // Backfill budget_item_members.traveler_id (user IS the traveler for their own rows)
+      const bimRows = db.prepare('SELECT id, user_id FROM budget_item_members WHERE traveler_id IS NULL').all() as { id: number; user_id: number }[];
+      for (const row of bimRows) {
+        const t = db.prepare('SELECT id FROM travelers WHERE linked_user_id = ?').get(row.user_id) as { id: number } | undefined;
+        if (t) db.prepare('UPDATE budget_item_members SET traveler_id = ? WHERE id = ?').run(t.id, row.id);
+      }
+    },
+    // Family Profiles: richer traveler data (date of birth, allergy/medical
+    // notes), age-tagged packing templates, and document ownership + expiry
+    // tracking on trip files.
+    () => {
+      try {
+        db.exec('ALTER TABLE travelers ADD COLUMN date_of_birth TEXT');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+      try {
+        db.exec('ALTER TABLE travelers ADD COLUMN notes TEXT');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+      try {
+        db.exec('ALTER TABLE packing_templates ADD COLUMN traveler_type TEXT');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+      try {
+        db.exec('ALTER TABLE trip_files ADD COLUMN traveler_id INTEGER REFERENCES travelers(id) ON DELETE SET NULL');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+      try {
+        db.exec('ALTER TABLE trip_files ADD COLUMN expiry_date TEXT');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+      try {
+        db.exec('ALTER TABLE trip_files ADD COLUMN document_type TEXT');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+    },
+    // Document parsing: stores the structured fields extracted from a
+    // passport/visa/ID/vaccination-record upload (JSON blob) after user review.
+    () => {
+      try {
+        db.exec('ALTER TABLE trip_files ADD COLUMN extracted_data TEXT');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+    },
+    // Document expiry alerts: tracks whether a scheduled expiry-warning
+    // notification has already been sent for this document, so the daily
+    // scheduler check doesn't re-notify every day.
+    () => {
+      try {
+        db.exec('ALTER TABLE trip_files ADD COLUMN expiry_alert_sent_at DATETIME');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+    },
+    // Age-based packing suggestions: per-item traveler_type lets a shared
+    // family template skip age-irrelevant items (e.g. diapers only for
+    // infant) when applied across a mixed-age trip roster.
+    () => {
+      try {
+        db.exec('ALTER TABLE packing_template_items ADD COLUMN traveler_type TEXT');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+    },
+    // Removes packing_template_traveler_affiliations: a write-only table
+    // (set via an admin endpoint) that was never read anywhere in the
+    // codebase — dead weight from an earlier, unfinished feature attempt.
+    () => {
+      db.exec('DROP TABLE IF EXISTS packing_template_traveler_affiliations');
+    },
+    // Age-band reminders: tracks whether we've already notified a traveler's
+    // manager that the stored type (adult/teen/child/infant) no longer
+    // matches the age computed from date_of_birth, so the daily scheduler
+    // check only alerts once per mismatch.
+    () => {
+      try {
+        db.exec('ALTER TABLE travelers ADD COLUMN age_band_alert_sent_at DATETIME');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+    },
+    // Cost-per-traveler reframe: budget_item_payers only stored user_id, so
+    // unlinked child travelers (no login of their own) collapsed onto their
+    // manager's account and showed up as "You" for every payer row. Adding
+    // traveler_id lets each payer resolve to its own traveler identity,
+    // mirroring the traveler_id already present on budget_item_members.
+    () => {
+      try {
+        db.exec('ALTER TABLE budget_item_payers ADD COLUMN traveler_id INTEGER REFERENCES travelers(id) ON DELETE SET NULL');
+      } catch (err: any) {
+        if (!err.message?.includes('duplicate column name')) throw err;
+      }
+
+      // Recreate to drop UNIQUE(budget_item_id, user_id) and replace with
+      // UNIQUE(budget_item_id, user_id, traveler_id) — otherwise two unlinked
+      // travelers sharing one manager's user_id collide and INSERT OR IGNORE
+      // silently drops the second payer row. Same fix as budget_item_members above.
+      const bipInfo = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='budget_item_payers'").get() as { sql: string } | undefined;
+      if (bipInfo) {
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS budget_item_payers_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            budget_item_id INTEGER NOT NULL REFERENCES budget_items(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            amount REAL NOT NULL DEFAULT 0,
+            traveler_id INTEGER REFERENCES travelers(id) ON DELETE SET NULL,
+            UNIQUE(budget_item_id, user_id, traveler_id)
+          );
+          INSERT OR IGNORE INTO budget_item_payers_new (id, budget_item_id, user_id, amount, traveler_id)
+            SELECT id, budget_item_id, user_id, amount, traveler_id FROM budget_item_payers;
+          DROP TABLE budget_item_payers;
+          ALTER TABLE budget_item_payers_new RENAME TO budget_item_payers;
+          CREATE INDEX IF NOT EXISTS idx_budget_item_payers_item ON budget_item_payers(budget_item_id);
+        `);
+      }
+
+      // Backfill: user IS the traveler for their own existing payer rows
+      const bipRows = db.prepare('SELECT id, user_id FROM budget_item_payers WHERE traveler_id IS NULL').all() as { id: number; user_id: number }[];
+      for (const row of bipRows) {
+        const t = db.prepare('SELECT id FROM travelers WHERE linked_user_id = ?').get(row.user_id) as { id: number } | undefined;
+        if (t) db.prepare('UPDATE budget_item_payers SET traveler_id = ? WHERE id = ?').run(t.id, row.id);
+      }
+    },
   ];
 
   if (currentVersion < migrations.length) {

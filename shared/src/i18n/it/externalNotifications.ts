@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const it: NotificationLocale = {
   email: {
-    footer: 'Hai ricevuto questa email perché hai le notifiche abilitate in TREK.',
+    footer: 'Hai ricevuto questa email perché hai le notifiche abilitate in TREK FAMILY.',
     manage: 'Gestisci le preferenze nelle impostazioni',
     madeWith: 'Made with',
-    openTrek: 'Apri TREK',
+    openTrek: 'Apri TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const it: NotificationLocale = {
       title: `Attività in scadenza: ${p.todo}`,
       body: `"${p.todo}" in "${p.trip}" scade il ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Documento in scadenza: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} per "${p.trip}" scade il ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Il viaggiatore potrebbe essere passato a una nuova fascia d'età: ${p.traveler}`,
+      body: `${p.traveler} ora ha l'età per essere ${p.newType} invece di ${p.oldType}. Aggiorna nelle Impostazioni se corretto.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Prenotazione trasporto mancante: ${p.trip}`,
+      body: `${p.travelers} potrebbe non avere ancora un trasporto prenotato per "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Invito Vacay Fusion',
-      body: `${p.actor} ti ha invitato a fondere i piani vacanza. Apri TREK per accettare o rifiutare.`,
+      body: `${p.actor} ti ha invitato a fondere i piani vacanza. Apri TREK FAMILY per accettare o rifiutare.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} foto condivise`,
@@ -52,7 +64,7 @@ const it: NotificationLocale = {
   passwordReset: {
     subject: 'Reimposta la tua password',
     greeting: 'Ciao',
-    body: 'Abbiamo ricevuto una richiesta di reimpostazione della password per il tuo account TREK. Clicca il pulsante qui sotto per impostare una nuova password.',
+    body: 'Abbiamo ricevuto una richiesta di reimpostazione della password per il tuo account TREK FAMILY. Clicca il pulsante qui sotto per impostare una nuova password.',
     ctaIntro: 'Reimposta password',
     expiry: 'Questo link scade tra 60 minuti.',
     ignore: 'Se non hai richiesto questa operazione, ignora questa email — la tua password non cambierà.',

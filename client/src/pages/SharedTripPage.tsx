@@ -397,7 +397,7 @@ export default function SharedTripPage() {
         <div style={{ textAlign: 'center', padding: '40px 0 20px' }}>
           <div className="bg-surface-card border border-edge-faint" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             <img src="/icons/icon.svg" alt="TREK" width="18" height="18" style={{ borderRadius: 4 }} />
-            <span className="text-[#9ca3af]" style={{ fontSize: 11 }}>{t('shared.sharedVia')} <strong className="text-[#6b7280]">TREK</strong></span>
+            <span className="text-[#9ca3af]" style={{ fontSize: 11 }}>{t('shared.sharedVia')} <strong className="text-[#6b7280]">TREK FAMILY</strong></span>
           </div>
           <div className="text-[#d1d5db]" style={{ marginTop: 8, fontSize: 10 }}>Made with <span className="text-[#ef4444]">&hearts;</span> by Maurice · <a href="https://github.com/mauriceboe/TREK" className="text-[#9ca3af]" style={{ textDecoration: 'none' }}>GitHub</a></div>
         </div>

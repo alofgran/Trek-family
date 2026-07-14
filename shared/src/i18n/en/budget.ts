@@ -116,6 +116,12 @@ const budget: TranslationStrings = {
   'costs.unfinishedHint': 'Total only — not settled yet',
   'costs.tapToInclude': 'Tap to include',
   'costs.amount': 'Amount',
+  'costs.costPerTraveler': 'Cost per traveler',
+  'costs.costPerTravelerSub': 'What each traveler cost this trip',
+  'costs.noTravelerCosts': 'No costs assigned to travelers yet.',
+  'costs.settleUpSection': 'Settle up',
+  'costs.settleUpToggleShow': 'Show balances & settle up',
+  'costs.settleUpToggleHide': 'Hide',
 };
 
 export default budget;

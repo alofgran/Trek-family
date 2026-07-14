@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const ru: NotificationLocale = {
   email: {
-    footer: 'Вы получили это, потому что у вас включены уведомления в TREK.',
+    footer: 'Вы получили это, потому что у вас включены уведомления в TREK FAMILY.',
     manage: 'Управление настройками',
     madeWith: 'Made with',
-    openTrek: 'Открыть TREK',
+    openTrek: 'Открыть TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const ru: NotificationLocale = {
       title: `Задача к сроку: ${p.todo}`,
       body: `"${p.todo}" в поездке "${p.trip}" — срок ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Документ скоро истекает: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} для поездки "${p.trip}" истекает ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Путешественник мог перейти в новую возрастную группу: ${p.traveler}`,
+      body: `${p.traveler} теперь достаточно взрослый(ая), чтобы быть ${p.newType} вместо ${p.oldType}. Обновите в Настройках, если это верно.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Отсутствует бронирование транспорта: ${p.trip}`,
+      body: `${p.travelers} возможно, ещё не забронировали транспорт для поездки "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Приглашение Vacay Fusion',
-      body: `${p.actor} приглашает вас объединить планы отпуска. Откройте TREK для подтверждения.`,
+      body: `${p.actor} приглашает вас объединить планы отпуска. Откройте TREK FAMILY для подтверждения.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} фото`,
@@ -52,7 +64,7 @@ const ru: NotificationLocale = {
   passwordReset: {
     subject: 'Сброс пароля',
     greeting: 'Здравствуйте',
-    body: 'Мы получили запрос на сброс пароля вашего аккаунта TREK. Нажмите кнопку ниже, чтобы установить новый пароль.',
+    body: 'Мы получили запрос на сброс пароля вашего аккаунта TREK FAMILY. Нажмите кнопку ниже, чтобы установить новый пароль.',
     ctaIntro: 'Сбросить пароль',
     expiry: 'Ссылка действительна 60 минут.',
     ignore: 'Если вы не запрашивали сброс — просто проигнорируйте это письмо, пароль останется прежним.',

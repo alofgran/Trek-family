@@ -253,18 +253,33 @@ describe('PackingController (parity with the legacy /api/trips/:tripId/packing r
       });
     });
 
-    it('404 when applying a missing/empty template (POST stays 200 otherwise)', () => {
+    it('404 when applying a missing template (null from service)', () => {
       const svc = makeService({ applyTemplate: vi.fn().mockReturnValue(null) } as Partial<PackingService>);
       expect(thrown(() => new PackingController(svc).applyTemplate(user, '5', 't1'))).toEqual({
-        status: 404, body: { error: 'Template not found or empty' },
+        status: 404, body: { error: 'Template not found' },
       });
+    });
+
+    it('422 when applying a template with no items configured (undefined from service)', () => {
+      const svc = makeService({ applyTemplate: vi.fn().mockReturnValue(undefined) } as Partial<PackingService>);
+      expect(thrown(() => new PackingController(svc).applyTemplate(user, '5', 't1'))).toEqual({
+        status: 422, body: { error: 'Template is empty' },
+      });
+    });
+
+    it('re-applying an already-applied template succeeds with count 0 and does not broadcast ([] from service is a no-op, not an error)', () => {
+      const broadcast = vi.fn();
+      const svc = makeService({ applyTemplate: vi.fn().mockReturnValue([]), broadcast } as Partial<PackingService>);
+      const res = new PackingController(svc).applyTemplate(user, '5', 't1');
+      expect(res).toEqual({ items: [], count: 0 });
+      expect(broadcast).not.toHaveBeenCalled();
     });
 
     it('applies a template, broadcasts the added items and reports the count', () => {
       const applyTemplate = vi.fn().mockReturnValue([{ id: 1 }, { id: 2 }, { id: 3 }]);
       const broadcast = vi.fn();
       const svc = makeService({ applyTemplate, broadcast } as Partial<PackingService>);
-      const res = new PackingController(svc).applyTemplate(user, '5', 't1', 'sock');
+      const res = new PackingController(svc).applyTemplate(user, '5', 't1', undefined, 'sock');
       expect(res).toEqual({ items: [{ id: 1 }, { id: 2 }, { id: 3 }], count: 3 });
       expect(broadcast).toHaveBeenCalledWith('5', 'packing:template-applied', { items: [{ id: 1 }, { id: 2 }, { id: 3 }] }, 'sock');
     });

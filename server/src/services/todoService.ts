@@ -5,31 +5,48 @@ export { verifyTripAccess } from './tripAccess';
 // ── Items ──────────────────────────────────────────────────────────────────
 
 export function listItems(tripId: string | number) {
-  return db.prepare(
-    'SELECT * FROM todo_items WHERE trip_id = ? ORDER BY sort_order ASC, created_at ASC'
-  ).all(tripId);
+  return db.prepare(`
+    SELECT ti.*, t.name as traveler_name, t.avatar as traveler_avatar, t.color as traveler_color
+    FROM todo_items ti
+    LEFT JOIN travelers t ON ti.assigned_traveler_id = t.id
+    WHERE ti.trip_id = ?
+    ORDER BY ti.sort_order ASC, ti.created_at ASC
+  `).all(tripId);
 }
 
 export function createItem(tripId: string | number, data: {
-  name: string; category?: string; due_date?: string; description?: string; assigned_user_id?: number; priority?: number;
+  name: string; category?: string; due_date?: string; description?: string;
+  assigned_user_id?: number; assigned_traveler_id?: number | null; priority?: number;
 }) {
   const maxOrder = db.prepare('SELECT MAX(sort_order) as max FROM todo_items WHERE trip_id = ?').get(tripId) as { max: number | null };
   const sortOrder = (maxOrder.max !== null ? maxOrder.max : -1) + 1;
 
   const result = db.prepare(
-    'INSERT INTO todo_items (trip_id, name, checked, category, sort_order, due_date, description, assigned_user_id, priority) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?)'
+    'INSERT INTO todo_items (trip_id, name, checked, category, sort_order, due_date, description, assigned_user_id, assigned_traveler_id, priority) VALUES (?, ?, 0, ?, ?, ?, ?, ?, ?, ?)'
   ).run(
     tripId, data.name, data.category || null, sortOrder,
-    data.due_date || null, data.description || null, data.assigned_user_id || null, data.priority || 0
+    data.due_date || null, data.description || null,
+    data.assigned_user_id || null,
+    data.assigned_traveler_id ?? null,
+    data.priority || 0
   );
 
-  return db.prepare('SELECT * FROM todo_items WHERE id = ?').get(result.lastInsertRowid);
+  return db.prepare(`
+    SELECT ti.*, t.name as traveler_name, t.avatar as traveler_avatar, t.color as traveler_color
+    FROM todo_items ti
+    LEFT JOIN travelers t ON ti.assigned_traveler_id = t.id
+    WHERE ti.id = ?
+  `).get(result.lastInsertRowid);
 }
 
 export function updateItem(
   tripId: string | number,
   id: string | number,
-  data: { name?: string; checked?: number; category?: string; due_date?: string | null; description?: string | null; assigned_user_id?: number | null; priority?: number | null },
+  data: {
+    name?: string; checked?: number; category?: string; due_date?: string | null;
+    description?: string | null; assigned_user_id?: number | null;
+    assigned_traveler_id?: number | null; priority?: number | null
+  },
   bodyKeys: string[]
 ) {
   const item = db.prepare('SELECT * FROM todo_items WHERE id = ? AND trip_id = ?').get(id, tripId);
@@ -43,6 +60,7 @@ export function updateItem(
       due_date = CASE WHEN ? THEN ? ELSE due_date END,
       description = CASE WHEN ? THEN ? ELSE description END,
       assigned_user_id = CASE WHEN ? THEN ? ELSE assigned_user_id END,
+      assigned_traveler_id = CASE WHEN ? THEN ? ELSE assigned_traveler_id END,
       priority = CASE WHEN ? THEN ? ELSE priority END
     WHERE id = ?
   `).run(
@@ -56,12 +74,19 @@ export function updateItem(
     data.description ?? null,
     bodyKeys.includes('assigned_user_id') ? 1 : 0,
     data.assigned_user_id ?? null,
+    bodyKeys.includes('assigned_traveler_id') ? 1 : 0,
+    data.assigned_traveler_id ?? null,
     bodyKeys.includes('priority') ? 1 : 0,
     data.priority ?? 0,
     id
   );
 
-  return db.prepare('SELECT * FROM todo_items WHERE id = ?').get(id);
+  return db.prepare(`
+    SELECT ti.*, t.name as traveler_name, t.avatar as traveler_avatar, t.color as traveler_color
+    FROM todo_items ti
+    LEFT JOIN travelers t ON ti.assigned_traveler_id = t.id
+    WHERE ti.id = ?
+  `).get(id);
 }
 
 export function deleteItem(tripId: string | number, id: string | number) {

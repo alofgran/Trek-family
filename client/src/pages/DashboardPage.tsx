@@ -261,7 +261,7 @@ function BoardingPassHero({ trip, bundle, locale, onOpen, onEdit, onCopy, onArch
 
   const members = bundle?.members || []
   const places = bundle?.places || []
-  const buddyCount = trip.shared_count != null ? trip.shared_count + 1 : members.length
+  const buddyCount = trip.traveler_count ?? (trip.shared_count != null ? trip.shared_count + 1 : members.length)
   const placeCount = trip.place_count || places.length
 
   const badge = status === 'ongoing' ? t('dashboard.hero.badgeLive')
@@ -479,7 +479,7 @@ function TripCard({ trip, locale, onOpen, onEdit, onCopy, onArchive, onDelete }:
         <div className="trip-meta" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <div><span className="n mono">{trip.day_count ?? 0}</span><span className="k">{t('dashboard.days')}</span></div>
           <div><span className="n mono">{trip.place_count ?? 0}</span><span className="k">{t('dashboard.places')}</span></div>
-          <div><span className="n mono">{trip.shared_count ?? 0}</span><span className="k">{trip.shared_count === 1 ? t('dashboard.card.buddyOne') : t('dashboard.members')}</span></div>
+          <div><span className="n mono">{trip.traveler_count ?? trip.shared_count ?? 0}</span><span className="k">{(trip.traveler_count ?? trip.shared_count ?? 0) === 1 ? t('dashboard.card.travelerOne') : t('dashboard.card.travelerMany')}</span></div>
         </div>
       </div>
     </article>

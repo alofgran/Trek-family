@@ -160,7 +160,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': 'Fout bij opslaan',
   'admin.tabs.addons': 'Add-ons',
   'admin.addons.title': 'Add-ons',
-  'admin.addons.subtitle': 'Schakel functies in of uit om je TREK-ervaring aan te passen.',
+  'admin.addons.subtitle': 'Schakel functies in of uit om je TREK FAMILY-ervaring aan te passen.',
   'admin.addons.catalog.memories.name': "Foto's (Immich)",
   'admin.addons.catalog.memories.description': "Deel reisfoto's via je Immich-instantie",
   'admin.addons.catalog.mcp.name': 'MCP',
@@ -193,7 +193,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'Weergegevens',
   'admin.weather.badge': 'Sinds 24 maart 2026',
   'admin.weather.description':
-    'TREK gebruikt Open-Meteo als weerbron. Open-Meteo is een gratis, open-source weerdienst — geen API-sleutel vereist.',
+    'TREK FAMILY gebruikt Open-Meteo als weerbron. Open-Meteo is een gratis, open-source weerdienst — geen API-sleutel vereist.',
   'admin.weather.forecast': '16-daagse voorspelling',
   'admin.weather.forecastDesc': 'Voorheen 5 dagen (OpenWeatherMap)',
   'admin.weather.climate': 'Historische klimaatgegevens',

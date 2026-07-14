@@ -1,6 +1,8 @@
 import { CheckSquare, Square, ChevronRight, Flag, Calendar } from 'lucide-react'
 import type { TodoItem } from '../../types'
 import { katColor, PRIO_CONFIG, type Member } from './todoListModel'
+import { useTripStore } from '../../store/tripStore'
+import { TravelerAvatar } from '../Travelers/TravelerAvatar'
 
 /** A single task row in the todo list. Pure presentation; all behaviour is
  *  delegated to onSelect/onToggle so TodoListPanel stays a layout component. */
@@ -17,6 +19,10 @@ export default function TodoRow({ item, members, categories, today, isSelected, 
 }) {
   const done = !!item.checked
   const assignedUser = members.find(m => m.id === item.assigned_user_id)
+  const tripTravelers = useTripStore(s => s.tripTravelers)
+  const assignedTraveler = item.assigned_traveler_id
+    ? tripTravelers.find(t => t.id === item.assigned_traveler_id)
+    : null
   const isOverdue = item.due_date && !done && item.due_date < today
   const catColor = item.category ? katColor(item.category, categories) : null
 
@@ -55,7 +61,7 @@ export default function TodoRow({ item, members, categories, today, isSelected, 
           </div>
         )}
         {/* Inline badges */}
-        {(item.priority || item.due_date || catColor || assignedUser) && (
+        {(item.priority || item.due_date || catColor || assignedUser || assignedTraveler) && (
         <div style={{ display: 'flex', gap: 5, marginTop: 5, flexWrap: 'wrap' }}>
           {item.priority > 0 && PRIO_CONFIG[item.priority] && (
             <span style={{
@@ -90,7 +96,18 @@ export default function TodoRow({ item, members, categories, today, isSelected, 
               {item.category}
             </span>
           )}
-          {assignedUser && (
+          {assignedTraveler && (
+            <span style={{
+              fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '2px 7px 2px 3px', borderRadius: 5, fontWeight: 500,
+              color: 'var(--text-secondary)', background: 'var(--bg-hover)',
+              border: '1px solid var(--border-faint)',
+            }}>
+              <TravelerAvatar traveler={assignedTraveler} size={13} />
+              {assignedTraveler.name}
+            </span>
+          )}
+          {assignedUser && !assignedTraveler && (
             <span style={{
               fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 4,
               padding: '2px 7px', borderRadius: 5, fontWeight: 500,

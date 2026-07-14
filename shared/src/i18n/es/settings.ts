@@ -185,7 +185,7 @@ const settings: TranslationStrings = {
   'settings.about.supporter.tier.budgetTraveller': 'Budget Traveller',
   'settings.about.supporter.tier.hostelBunkmate': 'Hostel Bunkmate',
   'settings.about.description':
-    'TREK es un planificador de viajes autoalojado que te ayuda a organizar tus viajes desde la primera idea hasta el último recuerdo. Planificación diaria, presupuesto, listas de equipaje, fotos y mucho más — todo en un solo lugar, en tu propio servidor.',
+    'TREK FAMILY es un planificador de viajes autoalojado que te ayuda a organizar tus viajes desde la primera idea hasta el último recuerdo. Planificación diaria, presupuesto, listas de equipaje, fotos y mucho más — todo en un solo lugar, en tu propio servidor.',
   'settings.about.madeWith': 'Hecho con',
   'settings.about.madeBy': 'por Maurice y una creciente comunidad de código abierto.',
   'settings.username': 'Usuario',
@@ -320,7 +320,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': 'Actívalo solo para una instancia de confianza en tu propia red.',
   'settings.airtrail.writeBack': 'Escribir cambios de vuelta en AirTrail',
   'settings.airtrail.writeBackHint':
-    'Desactivado por defecto: AirTrail es la fuente de referencia y TREK solo lee de él. Actívalo para enviar a AirTrail los cambios hechos en TREK.',
+    'Desactivado por defecto: AirTrail es la fuente de referencia y TREK FAMILY solo lee de él. Actívalo para enviar a AirTrail los cambios hechos en TREK FAMILY.',
   'settings.airtrail.connected': 'Conectado',
   'settings.airtrail.notConnected': 'No conectado',
   'settings.airtrail.toast.saved': 'Conexión con AirTrail guardada',

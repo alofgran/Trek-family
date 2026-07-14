@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const cs: NotificationLocale = {
   email: {
-    footer: 'Toto jsi obdržel/a, protože máš povoleny upozornění v TREK.',
+    footer: 'Toto jsi obdržel/a, protože máš povoleny upozornění v TREK FAMILY.',
     manage: 'Spravovat předvolby v nastavení',
     madeWith: 'Made with',
-    openTrek: 'Otevřít TREK',
+    openTrek: 'Otevřít TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const cs: NotificationLocale = {
       title: `Úkol se blíží: ${p.todo}`,
       body: `"${p.todo}" ve výletě "${p.trip}" má termín ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Dokument brzy vyprší: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} pro "${p.trip}" vyprší dne ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Cestující možná přešel do nové věkové skupiny: ${p.traveler}`,
+      body: `${p.traveler} je nyní dost starý/á na to, aby byl/a ${p.newType} místo ${p.oldType}. Pokud je to správně, aktualizujte v Nastavení.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Chybějící rezervace dopravy: ${p.trip}`,
+      body: `${p.travelers} možná ještě nemá zarezervovanou dopravu na "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Pozvánka Vacay Fusion',
-      body: `${p.actor} vás pozval ke spojení dovolenkových plánů. Otevřete TREK pro přijetí nebo odmítnutí.`,
+      body: `${p.actor} vás pozval ke spojení dovolenkových plánů. Otevřete TREK FAMILY pro přijetí nebo odmítnutí.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} sdílených fotek`,
@@ -52,7 +64,7 @@ const cs: NotificationLocale = {
   passwordReset: {
     subject: 'Obnovení hesla',
     greeting: 'Ahoj',
-    body: 'Obdrželi jsme žádost o obnovení hesla k tvému účtu TREK. Klikni na tlačítko níže a nastav nové heslo.',
+    body: 'Obdrželi jsme žádost o obnovení hesla k tvému účtu TREK FAMILY. Klikni na tlačítko níže a nastav nové heslo.',
     ctaIntro: 'Obnovit heslo',
     expiry: 'Odkaz vyprší za 60 minut.',
     ignore: 'Pokud jsi o obnovení nežádal/a, tento e-mail ignoruj — heslo zůstane beze změny.',

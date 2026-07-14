@@ -1,9 +1,9 @@
-# TREK Helm Chart
+# TREK FAMILY Helm Chart
 
-This is a minimal Helm chart for deploying the TREK app.
+This is a minimal Helm chart for deploying the TREK FAMILY app.
 
 ## Features
-- Deploys the TREK container
+- Deploys the TREK FAMILY container
 - Exposes port 3000 via Service
 - Optional persistent storage for `/app/data` and `/app/uploads`
 - Configurable environment variables and secrets
@@ -25,7 +25,7 @@ helm install trek trek/trek
 Or install directly from the local chart:
 
 ```sh
-helm install trek ./chart \
+helm install trek-family ./trek-family \
   --set ingress.enabled=true \
   --set ingress.hosts[0].host=yourdomain.com
 ```

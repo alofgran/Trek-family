@@ -1,4 +1,4 @@
-import { Trash2, ExternalLink, Download, MapPin, Ticket, StickyNote, Star, RotateCcw, Pencil } from 'lucide-react'
+import { Trash2, ExternalLink, Download, MapPin, Ticket, StickyNote, Star, RotateCcw, Pencil, AlertTriangle, Sparkles } from 'lucide-react'
 import type { TripFile } from '../../types'
 import type { FileManagerState } from './useFileManager'
 import { TRANSPORT_TYPES } from './FileManager.constants'
@@ -6,12 +6,34 @@ import { getFileIcon, isImage, formatSize, formatDateWithLocale, transportIcon, 
 import { AuthedImg } from './FileManagerAuthedImg'
 import { AvatarChip } from './FileManagerAvatarChip'
 import { SourceBadge } from './FileManagerSourceBadge'
+import { TravelerAvatar } from '../Travelers/TravelerAvatar'
+import { useTripStore } from '../../store/tripStore'
+import { PARSEABLE_DOCUMENT_TYPES } from '@trek-family/shared'
+
+const EXPIRY_WARNING_DAYS = 90
+
+function expiryStatus(expiryDate: string | null | undefined): 'expired' | 'expiring' | null {
+  if (!expiryDate) return null
+  const expiry = new Date(expiryDate)
+  if (Number.isNaN(expiry.getTime())) return null
+  const daysLeft = (expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  if (daysLeft < 0) return 'expired'
+  if (daysLeft <= EXPIRY_WARNING_DAYS) return 'expiring'
+  return null
+}
 
 export function FileRow(p: FileManagerState & { file: TripFile; isTrash?: boolean }) {
   const {
     file, isTrash = false, places, reservations, t, locale, can, trip,
-    handleStar, handleRestore, handlePermanentDelete, handleDelete, openFile, setAssignFileId,
+    handleStar, handleRestore, handlePermanentDelete, handleDelete, openFile, setAssignFileId, setAskParseFileId,
+    itineraryParseAvailable,
   } = p
+  const canParse = !isTrash
+    && file.document_type
+    && (PARSEABLE_DOCUMENT_TYPES as readonly string[]).includes(file.document_type)
+    && (file.document_type !== 'itinerary' || itineraryParseAvailable)
+    && !file.extracted_data
+    && !file.reservation_id
   const FileIcon = getFileIcon(file.mime_type)
   const allLinkedPlaceIds = new Set<number>()
   if (file.place_id) allLinkedPlaceIds.add(file.place_id)
@@ -22,6 +44,9 @@ export function FileRow(p: FileManagerState & { file: TripFile; isTrash?: boolea
   if (file.reservation_id) allLinkedResIds.add(file.reservation_id)
   for (const rid of (file.linked_reservation_ids || [])) allLinkedResIds.add(rid)
   const linkedReservations = [...allLinkedResIds].map(rid => reservations?.find(r => r.id === rid)).filter(Boolean)
+  const tripTravelers = useTripStore(s => s.tripTravelers)
+  const owner = file.traveler_id ? tripTravelers.find(tr => tr.id === file.traveler_id) : null
+  const status = expiryStatus(file.expiry_date)
   return (
     <div key={file.id} style={{
       background: 'var(--bg-card)', border: '1px solid var(--border-primary)', borderRadius: 12,
@@ -90,6 +115,29 @@ export function FileRow(p: FileManagerState & { file: TripFile; isTrash?: boolea
           {file.note_id && (
             <SourceBadge icon={StickyNote} label={t('files.sourceCollab') || 'Collab Notes'} />
           )}
+          {owner && (
+            <span title={owner.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px 2px 3px', borderRadius: 999, fontSize: 11, background: 'var(--bg-hover)', border: '1px solid var(--border-faint)' }}>
+              <TravelerAvatar traveler={owner} size={14} />
+              {owner.name}
+            </span>
+          )}
+          {status && (
+            <span
+              title={status === 'expired'
+                ? (t('files.expired', { date: file.expiry_date || '' }) || 'Expired')
+                : (t('files.expiringSoon', { date: file.expiry_date || '' }) || 'Expiring soon')}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 999, fontSize: 11, fontWeight: 600,
+                color: status === 'expired' ? '#ef4444' : '#f59e0b',
+                background: status === 'expired' ? '#ef444422' : '#f59e0b22',
+              }}
+            >
+              <AlertTriangle size={11} />
+              {status === 'expired'
+                ? (t('files.expired', { date: file.expiry_date || '' }) || 'Expired')
+                : (t('files.expiringSoon', { date: file.expiry_date || '' }) || 'Expiring soon')}
+            </span>
+          )}
         </div>
       </div>
 
@@ -115,6 +163,10 @@ export function FileRow(p: FileManagerState & { file: TripFile; isTrash?: boolea
             {can('file_edit', trip) && <button onClick={() => setAssignFileId(file.id)} title={t('files.assign') || 'Assign'} style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', borderRadius: 6, display: 'flex' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}>
               <Pencil size={14} />
+            </button>}
+            {can('file_edit', trip) && canParse && <button onClick={() => setAskParseFileId(file.id)} title={t('files.parse.action')} style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', borderRadius: 6, display: 'flex' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#6366f1'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}>
+              <Sparkles size={14} />
             </button>}
             <button onClick={() => openFile(file)} title={t('common.open')} style={{ padding: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', borderRadius: 6, display: 'flex' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}>

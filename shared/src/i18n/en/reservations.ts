@@ -20,6 +20,8 @@ const reservations: TranslationStrings = {
   'reservations.date': 'Date',
   'reservations.time': 'Time',
   'reservations.timeAlt': 'Time (alternative, e.g. 19:30)',
+  'reservations.travelers': 'Travelers',
+  'reservations.passengers': 'Passengers',
   'reservations.notes': 'Notes',
   'reservations.notesPlaceholder': 'Additional notes...',
   'reservations.meta.airline': 'Airline',

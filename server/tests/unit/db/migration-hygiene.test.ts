@@ -95,6 +95,10 @@ const ALLOWED_DESTRUCTIVE: Record<string, string> = {
     'Make place_id nullable + ON DELETE SET NULL. Rebuild, rows copied.',
   'DROP TABLE schema_version':
     'Add surrogate id PK to schema_version. Rebuild, version row copied.',
+  'DROP TABLE budget_item_members':
+    'Family Profiles: replace UNIQUE(budget_item_id, user_id) with UNIQUE(budget_item_id, user_id, traveler_id) so a user can appear as multiple travelers. Rebuild, rows copied first.',
+  'DROP TABLE budget_item_payers':
+    'Cost-per-traveler reframe: same UNIQUE(budget_item_id, user_id) -> UNIQUE(budget_item_id, user_id, traveler_id) widening as budget_item_members, needed so multiple unlinked travelers sharing one manager account can each have their own payer row. Rebuild, rows copied first.',
 
   // ── photo/journey table rebuilds (data preserved) ────────────────────────
   'DROP TABLE trip_photos':
@@ -123,6 +127,8 @@ const ALLOWED_DESTRUCTIVE: Record<string, string> = {
     'IF EXISTS drop to recreate the template-items table with a category_id FK. Template scaffolding.',
   'DROP TABLE notification_preferences':
     'IF EXISTS drop AFTER migration 71 copied the data into notification_channel_preferences.',
+  'DROP TABLE packing_template_traveler_affiliations':
+    'IF EXISTS drop of a write-only table (set via an admin endpoint, never read anywhere in the codebase) — dead weight from an earlier, unfinished feature attempt. No user-visible data lost.',
 
   // ── guarded column drop ──────────────────────────────────────────────────
   'ALTER TABLE photo_providers DROP COLUMN config':

@@ -157,7 +157,7 @@ export function applyPlatformTransport(app: express.Application): void {
       oauthMetadata: metadata,
       resourceServerUrl: new URL(`${metadata.issuer}/mcp`),
       scopesSupported: ALL_SCOPES as string[],
-      resourceName: 'TREK MCP',
+      resourceName: 'TREK FAMILY MCP',
     });
     return _sdkMetaRouter;
   }
@@ -195,7 +195,7 @@ export function applyPlatformTransport(app: express.Application): void {
       authorization_servers:    [meta.issuer],
       bearer_methods_supported: ['header'],
       scopes_supported:         ALL_SCOPES,
-      resource_name:            'TREK MCP',
+      resource_name:            'TREK FAMILY MCP',
     });
   });
 

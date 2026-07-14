@@ -35,7 +35,7 @@ const onListen = () => {
   const resolvedAppUrl = getMcpSafeUrl();
   const banner = [
     '──────────────────────────────────────',
-    '  TREK API started',
+    '  TREK FAMILY API started',
     `  Version         ${APP_VERSION}`,
     ...(HOST ? [`  Host:           ${HOST}`] : []),
     `  Container Port: ${PORT}`,
@@ -44,7 +44,7 @@ const onListen = () => {
     `  Timezone:       ${tz}`,
     `  Origins:        ${origins}`,
     `  Log level:      ${LOG_LVL}`,
-    `  Log file:       /app/data/logs/trek.log`,
+    `  Log file:       /app/data/logs/trek-family.log`,
     `  PID:            ${process.pid}`,
     `  User:           uid=${process.getuid?.()} gid=${process.getgid?.()}`,
     '──────────────────────────────────────',
@@ -74,7 +74,10 @@ const onListen = () => {
   }
   scheduler.start();
   scheduler.startTripReminders();
+  scheduler.startMissingTransportReminders();
   scheduler.startTodoReminders();
+  scheduler.startDocumentExpiryReminders();
+  scheduler.startAgeBandReminders();
   scheduler.startVersionCheck();
   scheduler.startDemoReset();
   scheduler.startIdempotencyCleanup();

@@ -1,4 +1,4 @@
-import type { AirtrailImportResult } from '@trek/shared';
+import type { AirtrailImportResult } from '@trek-family/shared';
 import { db } from '../../db/database';
 import { broadcast } from '../../websocket';
 import { createReservation } from '../reservationService';

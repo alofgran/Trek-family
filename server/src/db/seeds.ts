@@ -25,10 +25,10 @@ function seedAdminAccount(db: Database.Database): void {
 
     if (isOidcOnlyConfigured()) {
       console.log('');
-      console.log('╔══════════════════════════════════════════════╗');
-      console.log('║  TREK — OIDC-Only Mode                       ║');
-      console.log('║  First SSO login will become admin.           ║');
-      console.log('╚══════════════════════════════════════════════╝');
+      console.log('╔════════════════════════════════════════════════════╗');
+      console.log('║  TREK FAMILY — OIDC-Only Mode                      ║');
+      console.log('║  First SSO login will become admin.                ║');
+      console.log('╚════════════════════════════════════════════════════╝');
       console.log('');
       return;
     }
@@ -54,12 +54,12 @@ function seedAdminAccount(db: Database.Database): void {
     db.prepare('INSERT INTO users (username, email, password_hash, role, must_change_password) VALUES (?, ?, ?, ?, 1)').run(username, email, hash, 'admin');
 
     console.log('');
-    console.log('╔══════════════════════════════════════════════╗');
-    console.log('║  TREK — First Run: Admin Account Created     ║');
-    console.log('╠══════════════════════════════════════════════╣');
-    console.log(`║  Email:    ${email.padEnd(33)}║`);
-    console.log(`║  Password: ${password.padEnd(33)}║`);
-    console.log('╚══════════════════════════════════════════════╝');
+    console.log('╔════════════════════════════════════════════════════╗');
+    console.log('║  TREK FAMILY — First Run: Admin Account Created    ║');
+    console.log('╠════════════════════════════════════════════════════╣');
+    console.log(`║  Email:    ${email.padEnd(39)}║`);
+    console.log(`║  Password: ${password.padEnd(39)}║`);
+    console.log('╚════════════════════════════════════════════════════╝');
     console.log('');
   } catch (err: unknown) {
     console.error('[ERROR] Error seeding admin account:', err instanceof Error ? err.message : err);

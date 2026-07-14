@@ -41,24 +41,25 @@ import {
   type BookingImportPreviewItem,
   type BookingImportPreviewResponse,
   type BookingImportConfirmResponse,
-} from '@trek/shared'
+  type DocumentParseResult,
+} from '@trek-family/shared'
 import { getSocketId } from './websocket'
 import { isReachable, probeNow } from '../sync/connectivity'
 
 /**
- * Validate a response payload against its @trek/shared Zod schema — but only in
+ * Validate a response payload against its @trek-family/shared Zod schema — but only in
  * dev, and never throwing. A drift between the server contract and the client's
  * expected shape is surfaced as a console warning during development; in
  * production (and on any mismatch) the data passes through untouched, so adding
  * validation can never break a working call. This is the typed-request helper
- * the FE adopts per domain as each backend module lands on @trek/shared.
+ * the FE adopts per domain as each backend module lands on @trek-family/shared.
  */
 const API_DEV = Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV)
 export function parseInDev<S extends z.ZodTypeAny>(schema: S, data: unknown, label: string): z.infer<S> {
   if (API_DEV) {
     const result = schema.safeParse(data)
     if (!result.success) {
-      console.warn(`[api] ${label}: response did not match the @trek/shared schema`, result.error.issues)
+      console.warn(`[api] ${label}: response did not match the @trek-family/shared schema`, result.error.issues)
     }
   }
   return data as z.infer<S>
@@ -75,7 +76,7 @@ function checkInDev<T>(schema: z.ZodTypeAny, data: T, label: string): T {
   if (API_DEV) {
     const result = schema.safeParse(data)
     if (!result.success) {
-      console.warn(`[api] ${label}: response did not match the @trek/shared schema`, result.error.issues)
+      console.warn(`[api] ${label}: response did not match the @trek-family/shared schema`, result.error.issues)
     }
   }
   return data
@@ -331,6 +332,7 @@ export const tripsApi = {
   archive: (id: number | string) => apiClient.put(`/trips/${id}`, { is_archived: true }).then(r => r.data),
   unarchive: (id: number | string) => apiClient.put(`/trips/${id}`, { is_archived: false }).then(r => r.data),
   getMembers: (id: number | string) => apiClient.get(`/trips/${id}/members`).then(r => r.data),
+  getReadiness: (id: number | string) => apiClient.get(`/trips/${id}/readiness`).then(r => r.data),
   addMember: (id: number | string, identifier: string) => apiClient.post(`/trips/${id}/members`, { identifier } satisfies TripAddMemberRequest).then(r => r.data),
   removeMember: (id: number | string, userId: number) => apiClient.delete(`/trips/${id}/members/${userId}`).then(r => r.data),
   copy: (id: number | string, data?: TripCopyRequest) => apiClient.post(`/trips/${id}/copy`, data || {}).then(r => r.data),
@@ -397,7 +399,8 @@ export const packingApi = {
   getCategoryAssignees: (tripId: number | string) => apiClient.get(`/trips/${tripId}/packing/category-assignees`).then(r => r.data),
   setCategoryAssignees: (tripId: number | string, categoryName: string, userIds: number[]) => apiClient.put(`/trips/${tripId}/packing/category-assignees/${encodeURIComponent(categoryName)}`, { user_ids: userIds } satisfies PackingCategoryAssigneesRequest).then(r => r.data),
   listTemplates: (tripId: number | string) => apiClient.get(`/trips/${tripId}/packing/templates`).then(r => r.data),
-  applyTemplate: (tripId: number | string, templateId: number) => apiClient.post(`/trips/${tripId}/packing/apply-template/${templateId}`).then(r => r.data),
+  weatherSuggestions: (tripId: number | string) => apiClient.get(`/trips/${tripId}/packing/weather-suggestions`).then(r => r.data),
+  applyTemplate: (tripId: number | string, templateId: number, travelerIds?: number[]) => apiClient.post(`/trips/${tripId}/packing/apply-template/${templateId}`, travelerIds && travelerIds.length > 0 ? { traveler_ids: travelerIds } : undefined).then(r => r.data),
   saveAsTemplate: (tripId: number | string, name: string) => apiClient.post(`/trips/${tripId}/packing/save-as-template`, { name }).then(r => r.data),
   setBagMembers: (tripId: number | string, bagId: number, userIds: number[]) => apiClient.put(`/trips/${tripId}/packing/bags/${bagId}/members`, { user_ids: userIds } satisfies PackingBagMembersRequest).then(r => r.data),
   listBags: (tripId: number | string) => apiClient.get(`/trips/${tripId}/packing/bags`).then(r => r.data),
@@ -455,14 +458,14 @@ export const adminApi = {
   updateCollabFeatures: (features: Record<string, boolean>) => apiClient.put('/admin/collab-features', features).then(r => r.data),
   packingTemplates: () => apiClient.get('/admin/packing-templates').then(r => r.data),
   getPackingTemplate: (id: number) => apiClient.get(`/admin/packing-templates/${id}`).then(r => r.data),
-  createPackingTemplate: (data: { name: string }) => apiClient.post('/admin/packing-templates', data).then(r => r.data),
-  updatePackingTemplate: (id: number, data: { name: string }) => apiClient.put(`/admin/packing-templates/${id}`, data).then(r => r.data),
+  createPackingTemplate: (data: { name: string; traveler_type?: string | null }) => apiClient.post('/admin/packing-templates', data).then(r => r.data),
+  updatePackingTemplate: (id: number, data: { name?: string; traveler_type?: string | null }) => apiClient.put(`/admin/packing-templates/${id}`, data).then(r => r.data),
   deletePackingTemplate: (id: number) => apiClient.delete(`/admin/packing-templates/${id}`).then(r => r.data),
   addTemplateCategory: (templateId: number, data: { name: string }) => apiClient.post(`/admin/packing-templates/${templateId}/categories`, data).then(r => r.data),
   updateTemplateCategory: (templateId: number, catId: number, data: { name: string }) => apiClient.put(`/admin/packing-templates/${templateId}/categories/${catId}`, data).then(r => r.data),
   deleteTemplateCategory: (templateId: number, catId: number) => apiClient.delete(`/admin/packing-templates/${templateId}/categories/${catId}`).then(r => r.data),
-  addTemplateItem: (templateId: number, catId: number, data: { name: string }) => apiClient.post(`/admin/packing-templates/${templateId}/categories/${catId}/items`, data).then(r => r.data),
-  updateTemplateItem: (templateId: number, itemId: number, data: { name: string }) => apiClient.put(`/admin/packing-templates/${templateId}/items/${itemId}`, data).then(r => r.data),
+  addTemplateItem: (templateId: number, catId: number, data: { name: string; traveler_type?: string | null }) => apiClient.post(`/admin/packing-templates/${templateId}/categories/${catId}/items`, data).then(r => r.data),
+  updateTemplateItem: (templateId: number, itemId: number, data: { name?: string; traveler_type?: string | null }) => apiClient.put(`/admin/packing-templates/${templateId}/items/${itemId}`, data).then(r => r.data),
   deleteTemplateItem: (templateId: number, itemId: number) => apiClient.delete(`/admin/packing-templates/${templateId}/items/${itemId}`).then(r => r.data),
   listInvites: () => apiClient.get('/admin/invites').then(r => r.data),
   createInvite: (data: { max_uses: number; expires_in_days?: number }) => apiClient.post('/admin/invites', data).then(r => r.data),
@@ -616,6 +619,12 @@ export const filesApi = {
   addLink: (tripId: number | string, fileId: number, data: FileLinkRequest) => apiClient.post(`/trips/${tripId}/files/${fileId}/link`, data).then(r => r.data),
   removeLink: (tripId: number | string, fileId: number, linkId: number) => apiClient.delete(`/trips/${tripId}/files/${fileId}/link/${linkId}`).then(r => r.data),
   getLinks: (tripId: number | string, fileId: number) => apiClient.get(`/trips/${tripId}/files/${fileId}/links`).then(r => r.data),
+  parse: (tripId: number | string, fileId: number): Promise<DocumentParseResult> =>
+    apiClient.post(`/trips/${tripId}/files/${fileId}/parse`).then(r => r.data),
+  confirmItineraryParse: (tripId: number | string, fileId: number, items: BookingImportPreviewItem[]): Promise<BookingImportConfirmResponse> =>
+    apiClient.post(`/trips/${tripId}/files/${fileId}/parse/confirm-itinerary`, { items }).then(r => r.data),
+  confirmDocumentParse: (tripId: number | string, fileId: number, data: { fields: Record<string, string>; expiry_date?: string | null; traveler_id?: number | null }) =>
+    apiClient.post(`/trips/${tripId}/files/${fileId}/parse/confirm-document`, data).then(r => r.data),
 }
 
 export const reservationsApi = {
@@ -752,6 +761,31 @@ export const inAppNotificationsApi = {
       apiClient.delete('/notifications/in-app/all').then(r => r.data),
   respond: (id: number, response: NotificationRespondRequest['response']) =>
       apiClient.post(`/notifications/in-app/${id}/respond`, { response }).then(r => r.data),
+}
+
+export const travelersApi = {
+  list: () => apiClient.get('/travelers').then(r => r.data),
+  create: (data: { name: string; type?: string; avatar?: string | null; color?: string | null; date_of_birth?: string | null; notes?: string | null }) =>
+    apiClient.post('/travelers', data).then(r => r.data),
+  update: (id: number, data: { name?: string; type?: string; avatar?: string | null; color?: string | null; date_of_birth?: string | null; notes?: string | null }) =>
+    apiClient.put(`/travelers/${id}`, data).then(r => r.data),
+  delete: (id: number) => apiClient.delete(`/travelers/${id}`).then(r => r.data),
+  listForTrip: (tripId: number | string) => apiClient.get(`/trips/${tripId}/travelers`).then(r => r.data),
+  addToTrip: (tripId: number | string, travelerId: number) =>
+    apiClient.post(`/trips/${tripId}/travelers`, { traveler_id: travelerId }).then(r => r.data),
+  removeFromTrip: (tripId: number | string, travelerId: number) =>
+    apiClient.delete(`/trips/${tripId}/travelers/${travelerId}`).then(r => r.data),
+  listForReservation: (reservationId: number) => apiClient.get(`/reservations/${reservationId}/travelers`).then(r => r.data),
+  setForReservation: (reservationId: number, travelerIds: number[]) =>
+    apiClient.put(`/reservations/${reservationId}/travelers`, { traveler_ids: travelerIds }).then(r => r.data),
+  listForTripReservations: (tripId: number | string) => apiClient.get(`/trips/${tripId}/reservation-travelers`).then(r => r.data),
+  listMyTemplates: (tripId: number | string) => apiClient.get(`/trips/${tripId}/packing/my-templates`).then(r => r.data),
+  createMyTemplate: (tripId: number | string, name: string) =>
+    apiClient.post(`/trips/${tripId}/packing/my-templates`, { name }).then(r => r.data),
+  deleteMyTemplate: (tripId: number | string, tid: number) =>
+    apiClient.delete(`/trips/${tripId}/packing/my-templates/${tid}`).then(r => r.data),
+  setMyTemplateAffiliations: (tripId: number | string, tid: number, travelerIds: number[]) =>
+    apiClient.put(`/trips/${tripId}/packing/my-templates/${tid}/travelers`, { traveler_ids: travelerIds }).then(r => r.data),
 }
 
 export default apiClient

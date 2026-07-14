@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const nl: NotificationLocale = {
   email: {
-    footer: 'Je ontvangt dit omdat je meldingen hebt ingeschakeld in TREK.',
+    footer: 'Je ontvangt dit omdat je meldingen hebt ingeschakeld in TREK FAMILY.',
     manage: 'Voorkeuren beheren',
     madeWith: 'Made with',
-    openTrek: 'TREK openen',
+    openTrek: 'TREK FAMILY openen',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const nl: NotificationLocale = {
       title: `Taak verloopt: ${p.todo}`,
       body: `"${p.todo}" in "${p.trip}" verloopt op ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Document verloopt binnenkort: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} voor "${p.trip}" verloopt op ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Reiziger is mogelijk in nieuwe leeftijdsgroep: ${p.traveler}`,
+      body: `${p.traveler} is nu oud genoeg om ${p.newType} te zijn in plaats van ${p.oldType}. Werk dit bij in Instellingen indien juist.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Ontbrekende vervoersboeking: ${p.trip}`,
+      body: `${p.travelers} heeft mogelijk nog geen vervoer geboekt voor "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Vacay Fusion uitnodiging',
-      body: `${p.actor} nodigt je uit om vakantieplannen te fuseren. Open TREK om te accepteren of af te wijzen.`,
+      body: `${p.actor} nodigt je uit om vakantieplannen te fuseren. Open TREK FAMILY om te accepteren of af te wijzen.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} foto's gedeeld`,
@@ -52,7 +64,7 @@ const nl: NotificationLocale = {
   passwordReset: {
     subject: 'Reset je wachtwoord',
     greeting: 'Hallo',
-    body: 'We hebben een verzoek ontvangen om het wachtwoord voor je TREK-account te resetten. Klik op de knop hieronder om een nieuw wachtwoord in te stellen.',
+    body: 'We hebben een verzoek ontvangen om het wachtwoord voor je TREK FAMILY-account te resetten. Klik op de knop hieronder om een nieuw wachtwoord in te stellen.',
     ctaIntro: 'Wachtwoord resetten',
     expiry: 'Deze link verloopt over 60 minuten.',
     ignore: 'Als jij dit niet hebt aangevraagd, kun je deze e-mail negeren — je wachtwoord blijft ongewijzigd.',

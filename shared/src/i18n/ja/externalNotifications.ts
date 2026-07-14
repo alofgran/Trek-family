@@ -24,6 +24,18 @@ const ja: NotificationLocale = {
       title: `期限のタスク：${p.todo}`,
       body: `「${p.trip}」の「${p.todo}」は${p.due}が期限です。`,
     }),
+    document_expiry: (p) => ({
+      title: `まもなく期限切れの書類：${p.documentType}`,
+      body: `${p.traveler ? `（${p.traveler}）` : ''}「${p.trip}」の${p.documentType}は${p.expiry}に期限が切れます。`,
+    }),
+    age_band_update: (p) => ({
+      title: `トラベラーが新しい年齢グループに入った可能性があります：${p.traveler}`,
+      body: `${p.traveler}は${p.oldType}ではなく${p.newType}になる年齢に達しました。正しければ設定で更新してください。`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `交通手段の予約がありません：${p.trip}`,
+      body: `${p.travelers}は「${p.trip}」の交通手段をまだ予約していない可能性があります。`,
+    }),
     vacay_invite: (p) => ({
       title: 'Vacay Fusion招待',
       body: `${p.actor}が休暇プランの統合に招待しています。TREKを開いて承認または拒否してください。`,

@@ -10,7 +10,10 @@ export type NotifEventType =
   | 'trip_invite'
   | 'booking_change'
   | 'trip_reminder'
+  | 'missing_traveler_transport'
   | 'todo_due'
+  | 'document_expiry'
+  | 'age_band_update'
   | 'vacay_invite'
   | 'photos_shared'
   | 'collab_message'
@@ -31,7 +34,10 @@ const IMPLEMENTED_COMBOS: Record<NotifEventType, NotifChannel[]> = {
   trip_invite:       ['inapp', 'email', 'webhook', 'ntfy'],
   booking_change:    ['inapp', 'email', 'webhook', 'ntfy'],
   trip_reminder:     ['inapp', 'email', 'webhook', 'ntfy'],
+  missing_traveler_transport: ['inapp', 'email', 'webhook', 'ntfy'],
   todo_due:          ['inapp', 'email', 'webhook', 'ntfy'],
+  document_expiry:   ['inapp', 'email', 'webhook', 'ntfy'],
+  age_band_update:   ['inapp', 'email', 'webhook', 'ntfy'],
   vacay_invite:      ['inapp', 'email', 'webhook', 'ntfy'],
   photos_shared:     ['inapp', 'email', 'webhook', 'ntfy'],
   collab_message:    ['inapp', 'email', 'webhook', 'ntfy'],

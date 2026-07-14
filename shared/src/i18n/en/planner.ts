@@ -62,5 +62,10 @@ const planner: TranslationStrings = {
   'planner.keepPosition': 'Keep position during route optimization',
   'planner.dayDetails': 'Day details',
   'planner.dayN': 'Day {n}',
+  'planner.readinessTitle': '{count} things need attention before this trip',
+  'planner.readinessPassport': '{names} may not have enough passport validity for this trip',
+  'planner.readinessMissingTransport': '{names} may not have transport booked yet',
+  'planner.readinessPacking': 'Packing not finished ({detail})',
+  'planner.readinessView': 'View',
 };
 export default planner;

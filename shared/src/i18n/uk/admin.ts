@@ -160,7 +160,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': 'Помилка збереження',
   'admin.tabs.addons': 'Дополнения',
   'admin.addons.title': 'Доповнення',
-  'admin.addons.subtitle': 'Увімкніть або вимкніть функції, щоб налаштувати TREK під себе.',
+  'admin.addons.subtitle': 'Увімкніть або вимкніть функції, щоб налаштувати TREK FAMILY під себе.',
   'admin.addons.catalog.memories.name': 'Фото (Immich)',
   'admin.addons.catalog.memories.description': 'Діліться фотографіями з подорожей через Immich',
   'admin.addons.catalog.mcp.name': 'MCP',
@@ -193,7 +193,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'Дані про погоду',
   'admin.weather.badge': 'З 24 березня 2026',
   'admin.weather.description':
-    'TREK використовує Open-Meteo як джерело даних про погоду. Open-Meteo — безкоштовний сервіс з відкритим кодом, API-ключ не потрібен.',
+    'TREK FAMILY використовує Open-Meteo як джерело даних про погоду. Open-Meteo — безкоштовний сервіс з відкритим кодом, API-ключ не потрібен.',
   'admin.weather.forecast': 'Прогноз на 16 днів',
   'admin.weather.forecastDesc': 'Раніше 5 днів (OpenWeatherMap)',
   'admin.weather.climate': 'Історичні кліматичні дані',

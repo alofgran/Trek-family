@@ -1,15 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useTripStore } from '../../store/tripStore'
 import { useToast } from '../shared/Toast'
 import { useTranslation } from '../../i18n'
 import {
   Trash2, Plus, ChevronDown, ChevronRight,
-  X, Pencil, Check, MoreHorizontal, CheckCheck, RotateCcw, UserPlus,
+  X, Pencil, MoreHorizontal, CheckCheck, RotateCcw, GripVertical,
 } from 'lucide-react'
 import type { PackingItem, PackingBag } from '../../types'
 import { katColor } from './packingListPanel.helpers'
 import type { TripMember, CategoryAssignee } from './usePackingListPanel'
 import { ArtikelZeile } from './PackingListPanelItemRow'
+import { MergedRow } from './PackingListPanelMergedRow'
 
 interface KategorieGruppeProps {
   kategorie: string
@@ -27,36 +28,56 @@ interface KategorieGruppeProps {
   bags?: PackingBag[]
   onCreateBag: (name: string) => Promise<PackingBag | undefined>
   canEdit?: boolean
+  canDragItems?: boolean
+  headerColor?: string
+  onReceiveExternalSlot?: (itemIds: number[]) => void
+  onCardDragStart?: () => void
+  onCardDragOver?: () => void
+  onCardDrop?: () => void
+  onCardDragEnd?: () => void
+  isCardDragging?: boolean
+  isCardDropTarget?: boolean
 }
 
-export function KategorieGruppe({ kategorie, items, tripId, allCategories, onRename, onDeleteAll, onDeleteItem, onAddItem, assignees, tripMembers, onSetAssignees, bagTrackingEnabled, bags, onCreateBag, canEdit = true }: KategorieGruppeProps) {
+export function KategorieGruppe({ kategorie, items, tripId, allCategories, onRename, onDeleteAll, onDeleteItem, onAddItem, assignees, tripMembers, onSetAssignees, bagTrackingEnabled, bags, onCreateBag, canEdit = true, canDragItems, headerColor, onReceiveExternalSlot, onCardDragStart, onCardDragOver, onCardDrop, onCardDragEnd, isCardDragging, isCardDropTarget }: KategorieGruppeProps) {
   const [offen, setOffen] = useState(true)
   const [editingName, setEditingName] = useState(false)
   const [editKatName, setEditKatName] = useState(kategorie)
   const [showMenu, setShowMenu] = useState(false)
-  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false)
   const [showAddItem, setShowAddItem] = useState(false)
   const [newItemName, setNewItemName] = useState('')
+  const [dragSlot, setDragSlot] = useState<number | null>(null)
+  const [dropSlot, setDropSlot] = useState<number | null>(null)
   const addItemRef = useRef<HTMLInputElement>(null)
   const menuBtnRef = useRef<HTMLButtonElement>(null)
-  const assigneeDropdownRef = useRef<HTMLDivElement>(null)
-  const { togglePackingItem } = useTripStore()
+  const { togglePackingItem, reorderPackingItems } = useTripStore()
   const toast = useToast()
   const { t } = useTranslation()
-  useEffect(() => {
-    if (!showAssigneeDropdown) return
-    const handleClickOutside = (e: MouseEvent) => {
-      if (assigneeDropdownRef.current && !assigneeDropdownRef.current.contains(e.target as Node)) {
-        setShowAssigneeDropdown(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showAssigneeDropdown])
 
+  // Build "slots" — groups of items that share the same name (case-insensitive).
+  // Each slot is either a single item or multiple same-named items across travelers.
+  const slots = useCallback(() => {
+    const map = new Map<string, PackingItem[]>()
+    for (const item of items) {
+      const key = item.name.toLowerCase()
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(item)
+    }
+    return Array.from(map.values())
+  }, [items])()
+
+  const handleDrop = async (targetSlot: number) => {
+    if (dragSlot === null || dragSlot === targetSlot) { setDragSlot(null); setDropSlot(null); return }
+    const reordered = [...slots]
+    const [moved] = reordered.splice(dragSlot, 1)
+    reordered.splice(targetSlot, 0, moved)
+    const orderedIds = reordered.flatMap(slot => slot.map(i => i.id))
+    setDragSlot(null); setDropSlot(null)
+    await reorderPackingItems(tripId, orderedIds)
+  }
   const abgehakt = items.filter(i => i.checked).length
   const alleAbgehakt = abgehakt === items.length
-  const dot = katColor(kategorie, allCategories)
+  const dot = headerColor || katColor(kategorie, allCategories)
 
   const handleSaveKatName = async () => {
     const neu = editKatName.trim()
@@ -85,8 +106,56 @@ export function KategorieGruppe({ kategorie, items, tripId, allCategories, onRen
   }
 
   return (
-    <div style={{ marginBottom: 6, background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border-secondary)', overflow: 'visible' }}>
+    <div
+      onDragOver={(e) => {
+        e.preventDefault()
+        // Only signal card-drop-target when a card (not an item slot) is being dragged
+        if (Array.from(e.dataTransfer.types).includes('trek-card')) onCardDragOver?.()
+      }}
+      onDragLeave={(e) => {
+        // Only clear when the pointer truly leaves the card, not when it moves
+        // between child elements (which also fires dragleave on each of them).
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropSlot(null)
+      }}
+      onDrop={(e) => {
+        const slotRaw = e.dataTransfer.getData('trek-slot')
+        if (slotRaw) {
+          e.preventDefault()
+          try {
+            const { fromGroup, itemIds } = JSON.parse(slotRaw)
+            if (fromGroup !== kategorie && onReceiveExternalSlot) onReceiveExternalSlot(itemIds)
+          } catch {}
+          setDragSlot(null); setDropSlot(null)
+          return
+        }
+        const cardFrom = e.dataTransfer.getData('trek-card')
+        if (cardFrom && cardFrom !== kategorie) { e.preventDefault(); onCardDrop?.() }
+      }}
+      style={{
+        marginBottom: 6, background: 'var(--bg-card)', borderRadius: 14,
+        border: `1px solid ${isCardDropTarget ? 'var(--accent)' : 'var(--border-secondary)'}`,
+        overflow: 'visible', opacity: isCardDragging ? 0.5 : 1,
+        transition: 'border-color 0.1s, opacity 0.1s',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderBottom: offen ? '1px solid var(--border-secondary)' : 'none' }}>
+        {onCardDragStart && (
+          <span
+            draggable
+            onDragStart={(e) => {
+              e.stopPropagation()
+              e.dataTransfer.setData('trek-card', kategorie)
+              e.dataTransfer.effectAllowed = 'move'
+              onCardDragStart()
+            }}
+            onDragEnd={() => onCardDragEnd?.()}
+            style={{ flexShrink: 0, color: 'var(--text-faint)', cursor: 'grab', display: 'flex', opacity: 0.5, transition: 'opacity 0.1s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '0.5'}
+          >
+            <GripVertical size={13} />
+          </span>
+        )}
         <button onClick={() => setOffen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--text-faint)', flexShrink: 0 }}>
           {offen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
         </button>
@@ -107,8 +176,11 @@ export function KategorieGruppe({ kategorie, items, tripId, allCategories, onRen
           </span>
         )}
 
+        {/* Spacer — pushes assignee chips + count + menu to the right */}
+        <span style={{ flex: 1, minWidth: 0 }} />
+
         {/* Assignee chips */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1, minWidth: 0, marginLeft: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, marginLeft: 4 }}>
           {assignees.map(a => (
             <div key={a.user_id} style={{ position: 'relative' }}
               onClick={e => { e.stopPropagation(); if (canEdit) onSetAssignees(kategorie, assignees.filter(x => x.user_id !== a.user_id).map(x => x.user_id)) }}
@@ -135,66 +207,8 @@ export function KategorieGruppe({ kategorie, items, tripId, allCategories, onRen
               </div>
             </div>
           ))}
-          {canEdit && (
-          <div ref={assigneeDropdownRef} style={{ position: 'relative' }}>
-            <button onClick={e => { e.stopPropagation(); setShowAssigneeDropdown(v => !v) }}
-              style={{
-                width: 20, height: 20, borderRadius: '50%', border: '1.5px dashed var(--border-primary)',
-                background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--text-faint)', flexShrink: 0, padding: 0, transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--text-muted)'; e.currentTarget.style.color = 'var(--text-muted)' }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-primary)'; e.currentTarget.style.color = 'var(--text-faint)' }}
-            >
-              <UserPlus size={10} />
-            </button>
-            {showAssigneeDropdown && (
-              <div style={{
-                position: 'absolute', left: 0, top: '100%', marginTop: 4, zIndex: 50,
-                background: 'var(--bg-card)', border: '1px solid var(--border-primary)', borderRadius: 10,
-                boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: 4, minWidth: 160,
-              }}>
-                {tripMembers.map(m => {
-                  const isAssigned = assignees.some(a => a.user_id === m.id)
-                  return (
-                    <button key={m.id} onClick={e => {
-                      e.stopPropagation()
-                      const newIds = isAssigned
-                        ? assignees.filter(a => a.user_id !== m.id).map(a => a.user_id)
-                        : [...assignees.map(a => a.user_id), m.id]
-                      onSetAssignees(kategorie, newIds)
-                    }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                        padding: '6px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                        background: isAssigned ? 'var(--bg-hover)' : 'transparent',
-                        fontFamily: 'inherit', fontSize: 12, color: 'var(--text-primary)',
-                        transition: 'background 0.1s',
-                      }}
-                      onMouseEnter={e => { if (!isAssigned) e.currentTarget.style.background = 'var(--bg-tertiary)' }}
-                      onMouseLeave={e => { if (!isAssigned) e.currentTarget.style.background = 'transparent' }}
-                    >
-                      <div style={{
-                        width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                        background: `hsl(${m.username.charCodeAt(0) * 37 % 360}, 55%, 55%)`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 10, fontWeight: 700, color: 'white', textTransform: 'uppercase',
-                      }}>
-                        {m.username[0]}
-                      </div>
-                      <span style={{ flex: 1 }}>{m.username}</span>
-                      {isAssigned && <Check size={12} className="text-content-muted" />}
-                    </button>
-                  )
-                })}
-                {tripMembers.length === 0 && (
-                  <div style={{ padding: '8px 10px', fontSize: 11, color: 'var(--text-faint)' }}>{t('packing.noMembers')}</div>
-                )}
-              </div>
-            )}
-          </div>
-          )}
         </div>
+
 
         <span style={{
           fontSize: 11, fontWeight: 600, padding: '1px 8px', borderRadius: 99,
@@ -231,9 +245,58 @@ export function KategorieGruppe({ kategorie, items, tripId, allCategories, onRen
 
       {offen && (
         <div style={{ padding: '4px 4px 6px' }}>
-          {items.map(item => (
-            <ArtikelZeile key={item.id} item={item} tripId={tripId} categories={allCategories} onCategoryChange={() => {}} onDelete={onDeleteItem} bagTrackingEnabled={bagTrackingEnabled} bags={bags} onCreateBag={onCreateBag} canEdit={canEdit} />
-          ))}
+          {slots.map((slot, idx) => {
+            const isMerged = slot.length > 1 && slot.every(i => (i as any).traveler_id)
+            const effectiveCanDrag = canDragItems !== undefined ? canDragItems : canEdit
+          const dndProps = effectiveCanDrag ? {
+              draggable: true as const,
+              onDragStart: (e: React.DragEvent) => {
+                e.stopPropagation()
+                e.dataTransfer.effectAllowed = 'move'
+                e.dataTransfer.setData('trek-slot', JSON.stringify({ fromGroup: kategorie, itemIds: slot.flatMap(i => i.id) }))
+                setDragSlot(idx)
+              },
+              onDragOver: (e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDropSlot(idx) },
+              onDrop: (e: React.DragEvent) => {
+                e.preventDefault()
+                e.stopPropagation()
+                const cardData = e.dataTransfer.getData('trek-card')
+                if (cardData) return
+                const slotRaw = e.dataTransfer.getData('trek-slot')
+                if (slotRaw) {
+                  try {
+                    const { fromGroup, itemIds } = JSON.parse(slotRaw)
+                    if (fromGroup === kategorie) {
+                      handleDrop(idx)
+                    } else if (onReceiveExternalSlot) {
+                      onReceiveExternalSlot(itemIds)
+                      setDragSlot(null); setDropSlot(null)
+                    }
+                  } catch { handleDrop(idx) }
+                }
+              },
+              onDragEnd: () => { setDragSlot(null); setDropSlot(null) },
+              isDragging: dragSlot === idx,
+              isDropTarget: dropSlot === idx && dragSlot !== idx,
+            } : {}
+            if (isMerged) {
+              return (
+                <MergedRow
+                  key={slot[0].name.toLowerCase()}
+                  name={slot[0].name}
+                  items={slot}
+                  tripId={tripId}
+                  onDelete={onDeleteAll}
+                  onDeleteItem={onDeleteItem}
+                  canEdit={canEdit}
+                  {...dndProps}
+                />
+              )
+            }
+            return slot.map(item => (
+              <ArtikelZeile key={item.id} item={item} tripId={tripId} onDelete={onDeleteItem} bagTrackingEnabled={bagTrackingEnabled} bags={bags} onCreateBag={onCreateBag} canEdit={canEdit} {...dndProps} />
+            ))
+          })}
           {/* Inline add item */}
           {canEdit && (showAddItem ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px' }}>

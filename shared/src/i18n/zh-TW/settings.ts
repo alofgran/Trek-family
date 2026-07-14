@@ -201,7 +201,7 @@ const settings: TranslationStrings = {
   'settings.about.supporter.tier.budgetTraveller': 'Budget Traveller',
   'settings.about.supporter.tier.hostelBunkmate': 'Hostel Bunkmate',
   'settings.about.description':
-    'TREK 是一款自架旅遊規劃器，幫助您從最初構想到最後回憶，整理每次旅行。日程規劃、預算、行李清單、照片及更多功能——全部集中在您自己的伺服器上。',
+    'TREK FAMILY 是一款自架旅遊規劃器，幫助您從最初構想到最後回憶，整理每次旅行。日程規劃、預算、行李清單、照片及更多功能——全部集中在您自己的伺服器上。',
   'settings.about.madeWith': '以',
   'settings.about.madeBy': '由 Maurice 及不斷成長的開源社群製作。',
   'settings.username': '使用者名稱',
@@ -299,7 +299,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': '僅在你自己網路上受信任的執行個體啟用。',
   'settings.airtrail.writeBack': '將變更寫回 AirTrail',
   'settings.airtrail.writeBackHint':
-    '預設關閉：AirTrail 是資料來源，TREK 僅從中讀取。開啟後會將在 TREK 中所做的修改寫回 AirTrail。',
+    '預設關閉：AirTrail 是資料來源，TREK FAMILY 僅從中讀取。開啟後會將在 TREK FAMILY 中所做的修改寫回 AirTrail。',
   'settings.airtrail.connected': '已連接',
   'settings.airtrail.notConnected': '未連接',
   'settings.airtrail.toast.saved': '已儲存 AirTrail 連接',

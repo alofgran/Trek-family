@@ -32,7 +32,7 @@ import { createTables } from '../../../src/db/schema';
 import { runMigrations } from '../../../src/db/migrations';
 import { resetTestDb } from '../../helpers/test-db';
 import { createUser, createTrip } from '../../helpers/factories';
-import { createBudgetItem, updateMembers, toggleMemberPaid } from '../../../src/services/budgetService';
+import { createBudgetItem, updateMembers, toggleMemberPaid, setItemPayers, getBudgetItem } from '../../../src/services/budgetService';
 
 beforeAll(() => {
   createTables(testDb);
@@ -79,5 +79,54 @@ describe('toggleMemberPaid trip-scoping', () => {
 
     expect(member).toBeNull();
     expect(paidFlag(itemB.id, user.id)).toBe(0); // unchanged
+  });
+});
+
+function createUnlinkedTraveler(managerId: number, name: string): number {
+  const result = testDb
+    .prepare('INSERT INTO travelers (managed_by_user_id, linked_user_id, name) VALUES (?, NULL, ?)')
+    .run(managerId, name);
+  return result.lastInsertRowid as number;
+}
+
+describe('payers carry traveler_id (#reported: "who paid" showed "You" for every child)', () => {
+  it('BUDGET-SVC-DB-003: two unlinked travelers sharing one manager account resolve to distinct payer rows', () => {
+    const { user: parent } = createUser(testDb);
+    const trip = createTrip(testDb, parent.id, { title: 'Family trip' });
+    const kid1 = createUnlinkedTraveler(parent.id, 'Kid One');
+    const kid2 = createUnlinkedTraveler(parent.id, 'Kid Two');
+    const item = createBudgetItem(trip.id, {
+      name: 'Snacks', total_price: 20,
+      payers: [
+        { user_id: parent.id, traveler_id: kid1, amount: 12 },
+        { user_id: parent.id, traveler_id: kid2, amount: 8 },
+      ],
+    });
+
+    const fetched = getBudgetItem(item.id, trip.id);
+
+    expect(fetched?.payers).toHaveLength(2);
+    const byTraveler = Object.fromEntries((fetched?.payers || []).map(p => [p.traveler_id, p]));
+    expect(byTraveler[kid1].amount).toBe(12);
+    expect(byTraveler[kid1].traveler_name).toBe('Kid One');
+    expect(byTraveler[kid2].amount).toBe(8);
+    expect(byTraveler[kid2].traveler_name).toBe('Kid Two');
+    // Both still settle under the same account for balance math.
+    expect(byTraveler[kid1].user_id).toBe(parent.id);
+    expect(byTraveler[kid2].user_id).toBe(parent.id);
+  });
+
+  it('BUDGET-SVC-DB-004: setItemPayers replaces payer rows and preserves traveler_id', () => {
+    const { user: parent } = createUser(testDb);
+    const trip = createTrip(testDb, parent.id, { title: 'Family trip' });
+    const kid = createUnlinkedTraveler(parent.id, 'Kid');
+    const item = createBudgetItem(trip.id, { name: 'Tickets', total_price: 30 });
+
+    setItemPayers(item.id, trip.id, [{ user_id: parent.id, traveler_id: kid, amount: 30 }]);
+
+    const fetched = getBudgetItem(item.id, trip.id);
+    expect(fetched?.payers).toHaveLength(1);
+    expect(fetched?.payers?.[0].traveler_id).toBe(kid);
+    expect(fetched?.payers?.[0].traveler_name).toBe('Kid');
   });
 });

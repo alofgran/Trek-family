@@ -5,9 +5,14 @@ import type { Place, Reservation, Day } from '../../types'
 import type { FileManagerState } from './useFileManager'
 import { TRANSPORT_TYPES } from './FileManager.constants'
 import { transportIcon } from './FileManager.helpers'
+import { useTripStore } from '../../store/tripStore'
+import { TravelerAvatar } from '../Travelers/TravelerAvatar'
+import { DOCUMENT_TYPES, PARSEABLE_DOCUMENT_TYPES } from '@trek-family/shared'
 
 export function AssignModal(S: FileManagerState) {
-  const { files, assignFileId, setAssignFileId, t, days, assignments, places, reservations, tripId, handleAssign, refreshFiles } = S
+  const { files, assignFileId, setAssignFileId, t, days, assignments, places, reservations, tripId, handleAssign, refreshFiles, setAskParseFileId, itineraryParseAvailable } = S
+  const tripTravelers = useTripStore(s => s.tripTravelers)
+  const currentFile = files.find(f => f.id === assignFileId)
   return ReactDOM.createPortal(
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={() => setAssignFileId(null)}>
@@ -49,6 +54,85 @@ export function AssignModal(S: FileManagerState) {
             }}
           />
         </div>
+
+        {/* Document type + expiry — used for the expiring-document badge */}
+        <div style={{ padding: '8px 12px 0', display: 'flex', gap: 8 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', padding: '0 2px 4px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {t('files.documentType') || 'Document type'}
+            </div>
+            <select
+              value={currentFile?.document_type || ''}
+              onChange={async e => {
+                if (!currentFile) return
+                const newType = e.target.value || null
+                await handleAssign(currentFile.id, { document_type: newType })
+                const canPromptParse = newType
+                  && (PARSEABLE_DOCUMENT_TYPES as readonly string[]).includes(newType)
+                  && (newType !== 'itinerary' || itineraryParseAvailable)
+                if (canPromptParse) {
+                  setAssignFileId(null)
+                  setAskParseFileId(currentFile.id)
+                }
+              }}
+              style={{
+                width: '100%', padding: '7px 10px', fontSize: 13, borderRadius: 8,
+                border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none',
+              }}
+            >
+              <option value="">{t('files.documentTypeNone') || 'Not a document'}</option>
+              {DOCUMENT_TYPES.map(dt => (
+                <option key={dt} value={dt}>{t(`files.documentType.${dt}`) || dt}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', padding: '0 2px 4px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {t('files.expiryDate') || 'Expiry date'}
+            </div>
+            <input
+              type="date"
+              value={currentFile?.expiry_date || ''}
+              onChange={e => currentFile && handleAssign(currentFile.id, { expiry_date: e.target.value || null })}
+              style={{
+                width: '100%', padding: '6px 10px', fontSize: 13, borderRadius: 8,
+                border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+          </div>
+        </div>
+
+        {tripTravelers.length > 0 && (
+          <div style={{ padding: '8px 12px 0' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', padding: '0 2px 4px', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {t('files.owner') || 'Belongs to'}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {tripTravelers.map(traveler => {
+                const selected = currentFile?.traveler_id === traveler.id
+                return (
+                  <button
+                    key={traveler.id}
+                    onClick={() => currentFile && handleAssign(currentFile.id, { traveler_id: selected ? null : traveler.id })}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px 4px 4px', borderRadius: 999,
+                      border: selected ? '1px solid var(--accent, #6366f1)' : '1px solid var(--border-primary)',
+                      background: selected ? 'var(--bg-hover)' : 'transparent', cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
+                      color: 'var(--text-primary)', fontWeight: selected ? 600 : 400,
+                    }}
+                  >
+                    <TravelerAvatar traveler={traveler} size={18} />
+                    {traveler.name}
+                    {selected && <Check size={12} />}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         <div style={{ overflowY: 'auto', padding: 8 }}>
           {(() => {
             const file = files.find(f => f.id === assignFileId)

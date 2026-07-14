@@ -76,7 +76,7 @@ export class PackingController {
   create(
     @CurrentUser() user: User,
     @Param('tripId') tripId: string,
-    @Body() body: { name?: string; category?: string; checked?: boolean },
+    @Body() body: { name?: string; category?: string; checked?: boolean; quantity?: number },
     @Headers('x-socket-id') socketId?: string,
   ) {
     const trip = this.requireTrip(tripId, user);
@@ -84,7 +84,7 @@ export class PackingController {
     if (!body.name) {
       throw new HttpException({ error: 'Item name is required' }, 400);
     }
-    const item = this.packing.createItem(tripId, { name: body.name, category: body.category, checked: body.checked });
+    const item = this.packing.createItem(tripId, { name: body.name, category: body.category, checked: body.checked, quantity: body.quantity });
     this.packing.broadcast(tripId, 'packing:created', { item }, socketId);
     return { item };
   }
@@ -94,11 +94,12 @@ export class PackingController {
     @CurrentUser() user: User,
     @Param('tripId') tripId: string,
     @Body('orderedIds') orderedIds: number[],
-    @Headers('x-socket-id') _socketId?: string,
+    @Headers('x-socket-id') socketId?: string,
   ) {
     const trip = this.requireTrip(tripId, user);
     this.requireEdit(trip, user);
     this.packing.reorderItems(tripId, orderedIds);
+    this.packing.broadcast(tripId, 'packing:reordered', { orderedIds }, socketId);
     return { success: true };
   }
 
@@ -112,8 +113,8 @@ export class PackingController {
   ) {
     const trip = this.requireTrip(tripId, user);
     this.requireEdit(trip, user);
-    const { name, checked, category, weight_grams, bag_id, quantity } = body as Record<string, never>;
-    const updated = this.packing.updateItem(tripId, id, { name, checked, category, weight_grams, bag_id, quantity }, Object.keys(body));
+    const { name, checked, category, weight_grams, bag_id, quantity, traveler_id } = body as Record<string, never>;
+    const updated = this.packing.updateItem(tripId, id, { name, checked, category, weight_grams, bag_id, quantity, traveler_id }, Object.keys(body));
     if (!updated) {
       throw new HttpException({ error: 'Item not found' }, 404);
     }
@@ -198,7 +199,14 @@ export class PackingController {
   @Get('templates')
   listTemplates(@CurrentUser() user: User, @Param('tripId') tripId: string) {
     this.requireTrip(tripId, user);
-    return { templates: this.packing.listTemplates() };
+    return { templates: this.packing.listTemplates(user.id) };
+  }
+
+  @Get('weather-suggestions')
+  async weatherSuggestions(@CurrentUser() user: User, @Param('tripId') tripId: string) {
+    this.requireTrip(tripId, user);
+    const suggestions = await this.packing.getWeatherPackingSuggestions(tripId);
+    return { suggestions };
   }
 
   @Post('apply-template/:templateId')
@@ -207,16 +215,59 @@ export class PackingController {
     @CurrentUser() user: User,
     @Param('tripId') tripId: string,
     @Param('templateId') templateId: string,
+    @Body('traveler_ids') travelerIds: unknown,
     @Headers('x-socket-id') socketId?: string,
   ) {
     const trip = this.requireTrip(tripId, user);
     this.requireEdit(trip, user);
-    const added = this.packing.applyTemplate(tripId, templateId);
-    if (!added) {
-      throw new HttpException({ error: 'Template not found or empty' }, 404);
+    const ids = Array.isArray(travelerIds) ? (travelerIds as number[]) : undefined;
+    const added = this.packing.applyTemplate(tripId, templateId, ids);
+    if (added === null) {
+      throw new HttpException({ error: 'Template not found' }, 404);
     }
-    this.packing.broadcast(tripId, 'packing:template-applied', { items: added }, socketId);
+    if (added === undefined) {
+      throw new HttpException({ error: 'Template is empty' }, 422);
+    }
+    // added may legitimately be [] here — every (traveler, item) pair already
+    // existed, so re-applying was a no-op. That's success, not an error.
+    if (added.length > 0) {
+      this.packing.broadcast(tripId, 'packing:template-applied', { items: added }, socketId);
+    }
     return { items: added, count: added.length };
+  }
+
+  @Get('my-templates')
+  listMyTemplates(@CurrentUser() user: User, @Param('tripId') tripId: string) {
+    this.requireTrip(tripId, user);
+    return { templates: this.packing.listPersonalTemplates(user.id) };
+  }
+
+  @Post('my-templates')
+  createMyTemplate(
+    @CurrentUser() user: User,
+    @Param('tripId') tripId: string,
+    @Body('name') name?: string,
+  ) {
+    this.requireTrip(tripId, user);
+    if (!name?.trim()) {
+      throw new HttpException({ error: 'Template name is required' }, 400);
+    }
+    const template = this.packing.createPersonalTemplate(user.id, name.trim());
+    return { template };
+  }
+
+  @Delete('my-templates/:tid')
+  deleteMyTemplate(
+    @CurrentUser() user: User,
+    @Param('tripId') tripId: string,
+    @Param('tid') tid: string,
+  ) {
+    this.requireTrip(tripId, user);
+    const result = this.packing.deletePersonalTemplate(Number(tid), user.id);
+    if (!result) {
+      throw new HttpException({ error: 'Template not found' }, 404);
+    }
+    return { success: true };
   }
 
   @Put('bags/:bagId/members')

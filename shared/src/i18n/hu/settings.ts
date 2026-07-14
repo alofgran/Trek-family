@@ -184,7 +184,7 @@ const settings: TranslationStrings = {
   'settings.about.supporter.tier.budgetTraveller': 'Budget Traveller',
   'settings.about.supporter.tier.hostelBunkmate': 'Hostel Bunkmate',
   'settings.about.description':
-    'A TREK egy saját szerveren üzemeltetett útitervező, amely segít az utazásaid megszervezésében az első ötlettől az utolsó emlékig. Napi tervezés, költségvetés, csomagolási listák, fotók és még sok más — minden egy helyen, a saját szervereden.',
+    'A TREK FAMILY egy saját szerveren üzemeltetett útitervező, amely segít az utazásaid megszervezésében az első ötlettől az utolsó emlékig. Napi tervezés, költségvetés, csomagolási listák, fotók és még sok más — minden egy helyen, a saját szervereden.',
   'settings.about.madeWith': 'Készítve',
   'settings.about.madeBy': 'Maurice és egy növekvő nyílt forráskódú közösség által.',
   'settings.username': 'Felhasználónév',
@@ -319,7 +319,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': 'Csak megbízható, saját hálózaton futó példány esetén engedélyezd.',
   'settings.airtrail.writeBack': 'Módosítások visszaírása az AirTrailbe',
   'settings.airtrail.writeBackHint':
-    'Alapértelmezés szerint kikapcsolva: az AirTrail a hiteles forrás, és a TREK csak olvas belőle. Kapcsold be, hogy a TREK-ben végzett módosításokat visszaküldje az AirTrailbe.',
+    'Alapértelmezés szerint kikapcsolva: az AirTrail a hiteles forrás, és a TREK FAMILY csak olvas belőle. Kapcsold be, hogy a TREK FAMILY-ben végzett módosításokat visszaküldje az AirTrailbe.',
   'settings.airtrail.connected': 'Csatlakoztatva',
   'settings.airtrail.notConnected': 'Nincs csatlakoztatva',
   'settings.airtrail.toast.saved': 'AirTrail-kapcsolat mentve',

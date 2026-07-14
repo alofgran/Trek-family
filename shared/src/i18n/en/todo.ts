@@ -30,6 +30,7 @@ const todo: TranslationStrings = {
   'todo.detail.category': 'Category',
   'todo.detail.dueDate': 'Due date',
   'todo.detail.assignedTo': 'Assigned to',
+  'todo.detail.assignedTraveler': 'Traveler',
   'todo.detail.delete': 'Delete',
   'todo.detail.save': 'Save changes',
   'todo.sortByPrio': 'Priority',

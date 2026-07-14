@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plane, Train, Car, Ship, Bus, Sailboat, Bike, CarTaxiFront, Route, Paperclip, FileText, X, ExternalLink, Link2, Plus, Trash2 } from 'lucide-react'
+import { Plane, Train, Car, Ship, Bus, Sailboat, Bike, CarTaxiFront, Route, Paperclip, FileText, X, ExternalLink, Link2, Plus, Trash2, Users2 } from 'lucide-react'
+import { travelersApi } from '../../api/client'
+import { TravelerSelector } from '../Travelers/TravelerSelector'
 import Modal from '../shared/Modal'
 import CustomSelect from '../shared/CustomSelect'
 import CustomTimePicker from '../shared/CustomTimePicker'
@@ -17,7 +19,7 @@ import type { Day, Reservation, ReservationEndpoint, TripFile, BudgetItem } from
 import { parseReservationMetadata, orderedEndpoints } from '../../utils/flightLegs'
 import { BookingCostsSection } from './BookingCostsSection'
 import type { BookingExpenseRequest } from './BookingCostsSection.types'
-import { typeToCostCategory } from '@trek/shared'
+import { typeToCostCategory } from '@trek-family/shared'
 
 const TRANSPORT_TYPES = ['flight', 'train', 'bus', 'car', 'taxi', 'bicycle', 'cruise', 'ferry', 'transport_other'] as const
 type TransportType = typeof TRANSPORT_TYPES[number]
@@ -149,7 +151,19 @@ export function TransportModal({ isOpen, onClose, onSave, reservation, days, sel
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [showFilePicker, setShowFilePicker] = useState(false)
   const [linkedFileIds, setLinkedFileIds] = useState<number[]>([])
+  const [selectedTravelerIds, setSelectedTravelerIds] = useState<number[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!isOpen) return
+    if (reservation?.id) {
+      travelersApi.listForReservation(reservation.id)
+        .then(data => setSelectedTravelerIds((data.travelers || []).map((tr: any) => tr.id)))
+        .catch(() => {})
+    } else {
+      setSelectedTravelerIds([])
+    }
+  }, [isOpen, reservation?.id])
 
   useEffect(() => {
     if (!isOpen) return
@@ -329,6 +343,9 @@ export function TransportModal({ isOpen, onClose, onSave, reservation, days, sel
         needs_review: false,
       }
       const saved = await onSave(payload)
+      if (saved?.id) {
+        travelersApi.setForReservation(saved.id, selectedTravelerIds).catch(() => {})
+      }
       if (!reservation?.id && saved?.id && pendingFiles.length > 0 && onFileUpload) {
         for (const file of pendingFiles) {
           const fd = new FormData()
@@ -616,6 +633,19 @@ export function TransportModal({ isOpen, onClose, onSave, reservation, days, sel
               size="sm"
             />
           </div>
+        </div>
+
+        {/* Travelers / Passengers */}
+        <div>
+          <label className={labelClass} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Users2 size={10} style={{ display: 'inline' }} />
+            {t('reservations.travelers')}
+          </label>
+          <TravelerSelector
+            tripId={Number(tripId)}
+            value={selectedTravelerIds}
+            onChange={setSelectedTravelerIds}
+          />
         </div>
 
         {/* Notes */}

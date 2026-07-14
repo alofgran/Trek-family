@@ -160,7 +160,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': 'Nem sikerült menteni',
   'admin.tabs.addons': 'Bővítmények',
   'admin.addons.title': 'Bővítmények',
-  'admin.addons.subtitle': 'Funkciók engedélyezése vagy letiltása a TREK testreszabásához.',
+  'admin.addons.subtitle': 'Funkciók engedélyezése vagy letiltása a TREK FAMILY testreszabásához.',
   'admin.addons.catalog.packing.name': 'Listák',
   'admin.addons.catalog.packing.description': 'Csomagolási listák és teendők az utazásaidhoz',
   'admin.addons.catalog.budget.name': 'Költségvetés',
@@ -193,7 +193,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'Időjárás adatok',
   'admin.weather.badge': '2026. március 24. óta',
   'admin.weather.description':
-    'A TREK az Open-Meteo-t használja időjárás-adatforrásként. Az Open-Meteo egy ingyenes, nyílt forráskódú időjárás-szolgáltatás — nincs szükség API kulcsra.',
+    'A TREK FAMILY az Open-Meteo-t használja időjárás-adatforrásként. Az Open-Meteo egy ingyenes, nyílt forráskódú időjárás-szolgáltatás — nincs szükség API kulcsra.',
   'admin.weather.forecast': '16 napos előrejelzés',
   'admin.weather.forecastDesc': 'Korábban 5 nap volt (OpenWeatherMap)',
   'admin.weather.climate': 'Történelmi klímaadatok',

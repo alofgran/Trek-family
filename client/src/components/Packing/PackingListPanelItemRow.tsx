@@ -3,37 +3,50 @@ import { useTripStore } from '../../store/tripStore'
 import { useToast } from '../shared/Toast'
 import { useTranslation } from '../../i18n'
 import {
-  CheckSquare, Square, Trash2, Plus, Pencil, Package,
+  Trash2, Plus, Package, GripVertical,
 } from 'lucide-react'
 import type { PackingItem, PackingBag } from '../../types'
-import { katColor } from './packingListPanel.helpers'
 import { PACKING_PLACEHOLDER_NAME } from './packingListPanel.constants'
 import { QuantityInput } from './PackingListPanelQuantityInput'
+import { TravelerAvatar } from '../Travelers/TravelerAvatar'
+import { TravelerQtyChip } from './PackingListPanelTravelerChip'
 
 interface ArtikelZeileProps {
   item: PackingItem
   tripId: number
-  categories: string[]
-  onCategoryChange: () => void
   onDelete?: (item: PackingItem) => Promise<void>
   bagTrackingEnabled?: boolean
   bags?: PackingBag[]
   onCreateBag: (name: string) => Promise<PackingBag | undefined>
   canEdit?: boolean
+  draggable?: boolean
+  onDragStart?: (e: React.DragEvent) => void
+  onDragOver?: (e: React.DragEvent) => void
+  onDrop?: (e: React.DragEvent) => void
+  onDragEnd?: (e: React.DragEvent) => void
+  isDragging?: boolean
+  isDropTarget?: boolean
 }
 
-export function ArtikelZeile({ item, tripId, categories, onCategoryChange, onDelete, bagTrackingEnabled, bags = [], onCreateBag, canEdit = true }: ArtikelZeileProps) {
+export function ArtikelZeile({ item, tripId, onDelete, bagTrackingEnabled, bags = [], onCreateBag, canEdit = true, draggable: isDraggable, onDragStart, onDragOver, onDrop, onDragEnd, isDragging, isDropTarget }: ArtikelZeileProps) {
   const isPlaceholder = item.name === PACKING_PLACEHOLDER_NAME
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(isPlaceholder ? '' : item.name)
   const [hovered, setHovered] = useState(false)
-  const [showCatPicker, setShowCatPicker] = useState(false)
   const [showBagPicker, setShowBagPicker] = useState(false)
+  const [showTravelerPicker, setShowTravelerPicker] = useState(false)
   const [bagInlineCreate, setBagInlineCreate] = useState(false)
   const [bagInlineName, setBagInlineName] = useState('')
-  const { togglePackingItem, updatePackingItem, deletePackingItem } = useTripStore()
+  const { togglePackingItem, updatePackingItem, deletePackingItem, addPackingItem } = useTripStore()
+  const tripTravelers = useTripStore(s => s.tripTravelers)
   const toast = useToast()
   const { t } = useTranslation()
+
+  const itemTraveler = (item as any).traveler_id
+    ? tripTravelers.find(t => t.id === (item as any).traveler_id)
+    : null
+
+  const availableTravelers = itemTraveler ? tripTravelers.filter(tr => tr.id !== itemTraveler.id) : tripTravelers
 
   const handleToggle = () => togglePackingItem(tripId, item.id, !item.checked)
 
@@ -51,45 +64,47 @@ export function ArtikelZeile({ item, tripId, categories, onCategoryChange, onDel
     catch { toast.error(t('packing.toast.deleteError')) }
   }
 
-  const handleCatChange = async (cat: string) => {
-    setShowCatPicker(false)
-    if (cat === item.category) return
-    try { await updatePackingItem(tripId, item.id, { category: cat }) }
-    catch { toast.error(t('common.error')) }
+  // Unassigned item: pick a traveler directly. Already-assigned item: add a second
+  // traveler by creating a duplicate item, matching MergedRow's "+" semantics —
+  // the two same-named items then render as a merged slot.
+  const handleAddTraveler = async (travelerId: number) => {
+    setShowTravelerPicker(false)
+    try {
+      if (!itemTraveler) {
+        await updatePackingItem(tripId, item.id, { traveler_id: travelerId } as any)
+      } else {
+        const newItem = await addPackingItem(tripId, { name: item.name, category: item.category || '' })
+        if (newItem) await updatePackingItem(tripId, newItem.id, { traveler_id: travelerId } as any)
+      }
+    } catch {
+      toast.error(t('packing.toast.saveError'))
+    }
   }
 
   return (
     <div
       className="group"
+      draggable={isDraggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); setShowCatPicker(false); setShowBagPicker(false) }}
+      onMouseLeave={() => { setHovered(false); setShowBagPicker(false); setShowTravelerPicker(false) }}
       style={{
-        display: 'flex', alignItems: 'center', gap: 8,
+        display: 'flex', alignItems: 'center', gap: 6,
         padding: '6px 10px', borderRadius: 10, position: 'relative',
-        background: hovered ? 'var(--bg-secondary)' : 'transparent',
-        transition: 'background 0.1s',
+        background: isDragging ? 'var(--bg-tertiary)' : hovered ? 'var(--bg-secondary)' : 'transparent',
+        opacity: isDragging ? 0.35 : 1,
+        transition: 'background 0.1s, opacity 0.1s',
+        borderTop: isDropTarget ? '2px solid var(--accent)' : '2px solid transparent',
       }}
     >
-      <button onClick={handleToggle} style={{
-        flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: 0, position: 'relative',
-        width: 18, height: 18,
-        color: item.checked ? '#10b981' : 'var(--text-faint)',
-        transition: 'color 200ms cubic-bezier(0.23,1,0.32,1)',
-      }}>
-        <Square size={18} style={{
-          position: 'absolute', inset: 0,
-          opacity: item.checked ? 0 : 1,
-          transform: item.checked ? 'scale(0.7)' : 'scale(1)',
-          transition: 'opacity 180ms cubic-bezier(0.23,1,0.32,1), transform 180ms cubic-bezier(0.23,1,0.32,1)',
-        }} />
-        <CheckSquare size={18} style={{
-          position: 'absolute', inset: 0,
-          opacity: item.checked ? 1 : 0,
-          transform: item.checked ? 'scale(1)' : 'scale(0.5)',
-          transition: 'opacity 200ms cubic-bezier(0.23,1,0.32,1), transform 220ms cubic-bezier(0.34,1.56,0.64,1)',
-        }} />
-      </button>
-
+      {isDraggable && (
+        <span style={{ flexShrink: 0, color: 'var(--text-faint)', cursor: 'grab', display: 'flex', opacity: hovered ? 1 : 0, transition: 'opacity 0.1s' }}>
+          <GripVertical size={14} />
+        </span>
+      )}
       {editing && canEdit ? (
         <input
           type="text" value={editName} autoFocus
@@ -103,7 +118,8 @@ export function ArtikelZeile({ item, tripId, categories, onCategoryChange, onDel
         <span
           onClick={() => canEdit && !item.checked && setEditing(true)}
           style={{
-            flex: 1, fontSize: 13.5,
+            flex: '0 1 auto', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            fontSize: 13.5,
             cursor: !canEdit || item.checked ? 'default' : 'text',
             color: isPlaceholder ? 'var(--text-faint)' : (item.checked ? 'var(--text-faint)' : 'var(--text-primary)'),
             transition: 'color 200ms cubic-bezier(0.23,1,0.32,1)',
@@ -114,8 +130,23 @@ export function ArtikelZeile({ item, tripId, categories, onCategoryChange, onDel
         </span>
       )}
 
-      {/* Quantity */}
-      {canEdit && <QuantityInput value={item.quantity || 1} onSave={qty => updatePackingItem(tripId, item.id, { quantity: qty })} />}
+      {/* Spacer — pushes traveler chip, quantity, and actions to the right, matching MergedRow */}
+      <span style={{ flex: 1 }} />
+
+      {/* Traveler + quantity — same interactive chip as MergedRow (hover for +/-, hover for remove) */}
+      {itemTraveler ? (
+        <TravelerQtyChip
+          traveler={itemTraveler}
+          quantity={item.quantity || 1}
+          checked={!!item.checked}
+          canEdit={canEdit}
+          onToggleChecked={handleToggle}
+          onQtyChange={qty => updatePackingItem(tripId, item.id, { quantity: qty })}
+          onRemove={() => updatePackingItem(tripId, item.id, { traveler_id: null } as any)}
+        />
+      ) : (
+        canEdit && <QuantityInput value={item.quantity || 1} onSave={qty => updatePackingItem(tripId, item.id, { quantity: qty })} />
+      )}
 
       {/* Weight + Bag (when enabled) */}
       {bagTrackingEnabled && (
@@ -215,40 +246,51 @@ export function ArtikelZeile({ item, tripId, categories, onCategoryChange, onDel
       )}
 
       {canEdit && (
-      <div className="sm:opacity-0 sm:group-hover:opacity-100" style={{ display: 'flex', gap: 2, alignItems: 'center', transition: 'opacity 0.12s', flexShrink: 0 }}>
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowCatPicker(p => !p)}
-            title={t('packing.changeCategory')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 5px', borderRadius: 6, display: 'flex', alignItems: 'center', color: 'var(--text-faint)', fontSize: 10, gap: 2 }}
-          >
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: katColor(item.category || t('packing.defaultCategory'), categories), display: 'inline-block' }} />
-          </button>
-          {showCatPicker && (
-            <div style={{
-              position: 'absolute', right: 0, top: '100%', zIndex: 50, background: 'var(--bg-card)',
-              border: '1px solid var(--border-primary)', borderRadius: 10, boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-              padding: 4, minWidth: 140,
-            }}>
-              {categories.map(cat => (
-                <button key={cat} onClick={() => handleCatChange(cat)} style={{
-                  display: 'flex', alignItems: 'center', gap: 7, width: '100%',
-                  padding: '6px 10px', background: cat === (item.category || t('packing.defaultCategory')) ? 'var(--bg-tertiary)' : 'none',
-                  border: 'none', cursor: 'pointer', fontSize: 12.5, fontFamily: 'inherit',
-                  color: 'var(--text-secondary)', borderRadius: 7, textAlign: 'left',
-                }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: katColor(cat, categories), flexShrink: 0 }} />
-                  {cat}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <button onClick={() => setEditing(true)} title={t('common.rename')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 4px', borderRadius: 6, display: 'flex', color: 'var(--text-faint)' }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}>
-          <Pencil size={13} />
-        </button>
+      <div style={{ display: 'flex', gap: 2, alignItems: 'center', flexShrink: 0 }}>
+        {/* Add traveler — same "+" as MergedRow */}
+        {availableTravelers.length > 0 && (
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={e => { e.stopPropagation(); setShowTravelerPicker(v => !v) }}
+              title={t('travelers.assign')}
+              style={{
+                width: 22, height: 22, borderRadius: '50%',
+                border: '1.5px dashed var(--border-primary)',
+                background: 'none', cursor: 'pointer', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                color: 'var(--text-faint)', padding: 0, transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--text-muted)'; e.currentTarget.style.color = 'var(--text-muted)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-primary)'; e.currentTarget.style.color = 'var(--text-faint)' }}
+            >
+              <Plus size={11} />
+            </button>
+            {showTravelerPicker && (
+              <div style={{
+                position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 60,
+                background: 'var(--bg-card)', border: '1px solid var(--border-primary)', borderRadius: 10,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.12)', padding: 4, minWidth: 150,
+              }}>
+                {availableTravelers.map(traveler => (
+                  <button
+                    key={traveler.id}
+                    onClick={() => handleAddTraveler(traveler.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 7, width: '100%',
+                      padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 12, fontFamily: 'inherit', color: 'var(--text-secondary)', borderRadius: 7,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-tertiary)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <TravelerAvatar traveler={traveler} size={14} />
+                    {traveler.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <button onClick={handleDelete} title={t('common.delete')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '3px 4px', borderRadius: 6, display: 'flex', color: 'var(--text-faint)' }}
           onMouseEnter={e => e.currentTarget.style.color = '#ef4444'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}>

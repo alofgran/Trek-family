@@ -34,7 +34,7 @@ const { mocks } = vi.hoisted(() => ({
 vi.mock('../../src/services/tagService', () => mocks);
 
 import { TagsModule } from '../../src/nest/tags/tags.module';
-import { TrekExceptionFilter } from '../../src/nest/common/trek-exception.filter';
+import { TrekFamilyExceptionFilter } from '../../src/nest/common/trek-family-exception.filter';
 
 const tag = { id: 1, user_id: 1, name: 'Beach', color: '#10b981' };
 
@@ -46,7 +46,7 @@ describe('Tags e2e (real auth guard + temp SQLite)', () => {
     const moduleRef = await Test.createTestingModule({ imports: [TagsModule] }).compile();
     const nest = moduleRef.createNestApplication();
     nest.use(cookieParser());
-    nest.useGlobalFilters(new TrekExceptionFilter());
+    nest.useGlobalFilters(new TrekFamilyExceptionFilter());
     await nest.init();
     return nest;
   }

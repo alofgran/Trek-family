@@ -40,6 +40,8 @@ vi.mock('../../src/services/auditLog', () => ({
 
 import fs from 'node:fs';
 import { buildCronExpression, cleanupOldBackups } from '../../src/scheduler';
+import { isPassportInsufficientForTrip } from '../../src/services/documentValidityService';
+import { requiredPassportValidityDays } from '@trek-family/shared';
 
 interface BackupSettings {
   enabled: boolean;
@@ -214,5 +216,57 @@ describe('cleanupOldBackups', () => {
   it('swallows readdirSync errors without throwing', () => {
     vi.mocked(fs.readdirSync).mockImplementation(() => { throw new Error('ENOENT'); });
     expect(() => cleanupOldBackups(7, NOW)).not.toThrow();
+  });
+});
+
+describe('isPassportInsufficientForTrip', () => {
+  const LEAD_DAYS = 90;
+  const DAY = 24 * 60 * 60 * 1000;
+
+  it('flags a passport expiring before a Schengen trip\'s 3-month-post-departure cutoff', () => {
+    // Trip ends 2026-06-01, France requires 90 days beyond that -> cutoff 2026-08-30
+    const insufficient = isPassportInsufficientForTrip('2026-08-01', '2026-06-01', ['FR'], requiredPassportValidityDays, LEAD_DAYS);
+    expect(insufficient).toBe(true);
+  });
+
+  it('does not flag a passport that clears the Schengen 3-month cutoff', () => {
+    const sufficient = isPassportInsufficientForTrip('2026-12-01', '2026-06-01', ['FR'], requiredPassportValidityDays, LEAD_DAYS);
+    expect(sufficient).toBe(false);
+  });
+
+  it('flags a passport for the 6-month default even though it is not "expiring soon" in absolute terms', () => {
+    // Trip is 4 months away, destination unresolved -> 180-day default cutoff.
+    // A passport expiring in 5 months clears LEAD_DAYS (90d) easily but not the country rule.
+    const now = new Date('2026-01-01').getTime();
+    const tripEnd = new Date(now + 120 * DAY).toISOString().slice(0, 10); // trip ends in 4 months
+    const expiry = new Date(now + 150 * DAY).toISOString().slice(0, 10); // passport expires in 5 months
+    const insufficient = isPassportInsufficientForTrip(expiry, tripEnd, [], requiredPassportValidityDays, LEAD_DAYS, now);
+    expect(insufficient).toBe(true);
+  });
+
+  it('duration-of-stay-only destination (e.g. US): sufficient if valid through the trip, even with no extra buffer', () => {
+    const sufficient = isPassportInsufficientForTrip('2026-06-02', '2026-06-01', ['US'], requiredPassportValidityDays, LEAD_DAYS);
+    expect(sufficient).toBe(false);
+  });
+
+  it('duration-of-stay-only destination: insufficient if it expires before the trip even ends', () => {
+    const insufficient = isPassportInsufficientForTrip('2026-05-31', '2026-06-01', ['US'], requiredPassportValidityDays, LEAD_DAYS);
+    expect(insufficient).toBe(true);
+  });
+
+  it('multi-country trip uses the strictest (max) requirement across resolved countries', () => {
+    // US (0 days) + FR (90 days) -> the 90-day requirement wins
+    const tripEnd = '2026-06-01';
+    const expiryJustOverUS = '2026-06-05'; // clears US, would fail FR's 90-day requirement
+    const insufficient = isPassportInsufficientForTrip(expiryJustOverUS, tripEnd, ['US', 'FR'], requiredPassportValidityDays, LEAD_DAYS);
+    expect(insufficient).toBe(true);
+  });
+
+  it('falls back to the flat lead-time window when the trip has no end_date', () => {
+    const now = new Date('2026-01-01').getTime();
+    const withinWindow = new Date(now + 30 * DAY).toISOString().slice(0, 10);
+    const outsideWindow = new Date(now + 200 * DAY).toISOString().slice(0, 10);
+    expect(isPassportInsufficientForTrip(withinWindow, null, ['FR'], requiredPassportValidityDays, LEAD_DAYS, now)).toBe(true);
+    expect(isPassportInsufficientForTrip(outsideWindow, null, ['FR'], requiredPassportValidityDays, LEAD_DAYS, now)).toBe(false);
   });
 });

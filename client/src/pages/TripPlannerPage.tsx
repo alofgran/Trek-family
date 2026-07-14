@@ -23,12 +23,15 @@ import AirTrailImportModal from '../components/Planner/AirTrailImportModal'
 import ReservationsPanel from '../components/Planner/ReservationsPanel'
 import PackingListPanel from '../components/Packing/PackingListPanel'
 import ApplyTemplateButton from '../components/Packing/ApplyTemplateButton'
+import WeatherSuggestButton from '../components/Packing/WeatherSuggestButton'
 import TodoListPanel from '../components/Todo/TodoListPanel'
 import FileManager from '../components/Files/FileManager'
 import CostsPanel, { ExpenseModal, type ExpensePrefill } from '../components/Budget/CostsPanel'
 import type { BookingExpenseRequest } from '../components/Planner/BookingCostsSection.types'
 import type { BudgetItem } from '../types'
 import CollabPanel from '../components/Collab/CollabPanel'
+import TravelersPanel from '../components/Travelers/TravelersPanel'
+import { TripReadinessBanner } from '../components/Planner/TripReadinessBanner'
 import Navbar from '../components/Layout/Navbar'
 import { useToast } from '../components/shared/Toast'
 import { Map, X, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Ticket, PackageCheck, Wallet, FolderOpen, Users, Train } from 'lucide-react'
@@ -124,6 +127,11 @@ function ListsContainer({ tripId, packingItems, todoItems }: { tripId: number; p
                   </button>
                 )}
                 <ApplyTemplateButton
+                  tripId={tripId}
+                  className={`${sharedBtnClass} bg-accent text-accent-text`}
+                  style={sharedBtnStyle}
+                />
+                <WeatherSuggestButton
                   tripId={tripId}
                   className={`${sharedBtnClass} bg-accent text-accent-text`}
                   style={sharedBtnStyle}
@@ -251,7 +259,7 @@ export default function TripPlannerPage(): React.ReactElement | null {
           />
         </div>
         <div className="text-content" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.3px', marginBottom: 6, animation: 'fadeInUp 0.5s ease-out' }}>
-          {trip?.title || 'TREK'}
+          {trip?.title || 'TREK FAMILY'}
         </div>
         <div className="text-content-faint" style={{ fontSize: 12, fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 32, animation: 'fadeInUp 0.5s ease-out 0.1s both' }}>
           {t('trip.loadingPhotos')}
@@ -298,6 +306,9 @@ export default function TripPlannerPage(): React.ReactElement | null {
 
         {activeTab === 'plan' && (
           <div style={{ position: 'absolute', inset: 0 }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 30 }}>
+              <TripReadinessBanner tripId={tripId} onNavigateTab={handleTabChange} />
+            </div>
             <MapView
               places={mapPlaces}
               dayPlaces={dayPlaces}
@@ -692,6 +703,12 @@ export default function TripPlannerPage(): React.ReactElement | null {
         {activeTab === 'collab' && (
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 'var(--bottom-nav-h)', overflow: 'hidden' }}>
             <CollabPanel tripId={tripId} tripMembers={tripMembers} collabFeatures={collabFeatures} />
+          </div>
+        )}
+
+        {activeTab === 'travelers' && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 'var(--bottom-nav-h)', overflowY: 'auto' }}>
+            <TravelersPanel tripId={tripId} />
           </div>
         )}
       </div>

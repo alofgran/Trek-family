@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const fr: NotificationLocale = {
   email: {
-    footer: 'Vous recevez cet e-mail car les notifications sont activées dans TREK.',
+    footer: 'Vous recevez cet e-mail car les notifications sont activées dans TREK FAMILY.',
     manage: 'Gérer les préférences',
     madeWith: 'Made with',
-    openTrek: 'Ouvrir TREK',
+    openTrek: 'Ouvrir TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const fr: NotificationLocale = {
       title: `Tâche à échéance : ${p.todo}`,
       body: `"${p.todo}" dans "${p.trip}" est due le ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Document bientôt expiré : ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} pour "${p.trip}" expire le ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Voyageur peut-être passé dans un nouveau groupe d'âge : ${p.traveler}`,
+      body: `${p.traveler} est maintenant assez âgé(e) pour être ${p.newType} au lieu de ${p.oldType}. Mettez à jour dans les paramètres si besoin.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Réservation de transport manquante : ${p.trip}`,
+      body: `${p.travelers} n'ont peut-être pas encore de transport réservé pour "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Invitation Vacay Fusion',
-      body: `${p.actor} vous invite à fusionner les plans de vacances. Ouvrez TREK pour accepter ou refuser.`,
+      body: `${p.actor} vous invite à fusionner les plans de vacances. Ouvrez TREK FAMILY pour accepter ou refuser.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} photos partagées`,
@@ -52,7 +64,7 @@ const fr: NotificationLocale = {
   passwordReset: {
     subject: 'Réinitialisez votre mot de passe',
     greeting: 'Bonjour',
-    body: 'Nous avons reçu une demande de réinitialisation du mot de passe de votre compte TREK. Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe.',
+    body: 'Nous avons reçu une demande de réinitialisation du mot de passe de votre compte TREK FAMILY. Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe.',
     ctaIntro: 'Réinitialiser le mot de passe',
     expiry: 'Ce lien expire dans 60 minutes.',
     ignore: "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail — votre mot de passe ne changera pas.",

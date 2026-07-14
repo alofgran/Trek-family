@@ -5,7 +5,7 @@ import { useCanDo } from '../../store/permissionsStore'
 import { useSettingsStore } from '../../store/settingsStore'
 import { getCached, fetchPhoto } from '../../services/photoService'
 import { useToast } from '../../components/shared/Toast'
-import { Map, Ticket, PackageCheck, Wallet, FolderOpen, Users, Train } from 'lucide-react'
+import { Map, Ticket, PackageCheck, Wallet, FolderOpen, Users, Train, Users2 } from 'lucide-react'
 import { useTranslation } from '../../i18n'
 import { addonsApi, accommodationsApi, authApi, tripsApi, assignmentsApi, healthApi, airtrailApi } from '../../api/client'
 import { accommodationRepo } from '../../repo/accommodationRepo'
@@ -98,6 +98,7 @@ export function useTripPlanner() {
     ...(enabledAddons.budget ? [{ id: 'finanzplan', label: t('trip.tabs.budget'), icon: Wallet }] : []),
     ...(enabledAddons.documents ? [{ id: 'dateien', label: t('trip.tabs.files'), icon: FolderOpen }] : []),
     ...(enabledAddons.collab ? [{ id: 'collab', label: t('admin.addons.catalog.collab.name'), icon: Users }] : []),
+    { id: 'travelers', label: t('trip.tabs.travelers'), icon: Users2 },
   ]
 
   const [activeTab, setActiveTab] = useState<string>(() => {

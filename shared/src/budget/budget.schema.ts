@@ -19,11 +19,14 @@ import { z } from 'zod';
  */
 export const budgetItemMemberSchema = z.object({
   user_id: z.number(),
+  traveler_id: z.number().nullable().optional(),
   paid: z.number(),
-  username: z.string(),
+  username: z.string().nullable(),
   avatar_url: z.string().nullable().optional(),
   avatar: z.string().nullable().optional(),
   budget_item_id: z.number().optional(),
+  traveler_name: z.string().nullable().optional(),
+  traveler_avatar: z.string().nullable().optional(),
 });
 export type BudgetItemMember = z.infer<typeof budgetItemMemberSchema>;
 
@@ -85,11 +88,14 @@ export function typeToCostCategory(type: string | null | undefined): CostCategor
  */
 export const budgetItemPayerSchema = z.object({
   user_id: z.number(),
+  traveler_id: z.number().nullable().optional(),
   amount: z.number(),
   username: z.string().optional(),
   avatar_url: z.string().nullable().optional(),
   avatar: z.string().nullable().optional(),
   budget_item_id: z.number().optional(),
+  traveler_name: z.string().nullable().optional(),
+  traveler_avatar: z.string().nullable().optional(),
 });
 export type BudgetItemPayer = z.infer<typeof budgetItemPayerSchema>;
 
@@ -123,6 +129,7 @@ export type BudgetItem = z.infer<typeof budgetItemSchema>;
 
 const payerInputSchema = z.object({
   user_id: z.number(),
+  traveler_id: z.number().nullable().optional(),
   amount: z.number(),
 });
 

@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const pl: NotificationLocale = {
   email: {
-    footer: 'Otrzymałeś/aś tę wiadomość, ponieważ masz włączone powiadomienia w TREK.',
+    footer: 'Otrzymałeś/aś tę wiadomość, ponieważ masz włączone powiadomienia w TREK FAMILY.',
     manage: 'Zarządzaj preferencjami w ustawieniach',
     madeWith: 'Made with',
-    openTrek: 'Otwórz TREK',
+    openTrek: 'Otwórz TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const pl: NotificationLocale = {
       title: `Zadanie z terminem: ${p.todo}`,
       body: `"${p.todo}" w "${p.trip}" — termin ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Dokument wkrótce wygaśnie: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} dla "${p.trip}" wygasa ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Podróżny mógł przejść do nowej grupy wiekowej: ${p.traveler}`,
+      body: `${p.traveler} jest już wystarczająco dorosły/a, aby być ${p.newType} zamiast ${p.oldType}. Zaktualizuj w Ustawieniach, jeśli to prawda.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Brak rezerwacji transportu: ${p.trip}`,
+      body: `${p.travelers} może nie mieć jeszcze zarezerwowanego transportu na "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Zaproszenie Vacay Fusion',
-      body: `${p.actor} zaprosił Cię do połączenia planów urlopowych. Otwórz TREK, aby zaakceptować lub odrzucić.`,
+      body: `${p.actor} zaprosił Cię do połączenia planów urlopowych. Otwórz TREK FAMILY, aby zaakceptować lub odrzucić.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} zdjęć udostępnionych`,
@@ -52,7 +64,7 @@ const pl: NotificationLocale = {
   passwordReset: {
     subject: 'Zresetuj hasło',
     greeting: 'Cześć',
-    body: 'Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta TREK. Kliknij przycisk poniżej, aby ustawić nowe hasło.',
+    body: 'Otrzymaliśmy prośbę o zresetowanie hasła do Twojego konta TREK FAMILY. Kliknij przycisk poniżej, aby ustawić nowe hasło.',
     ctaIntro: 'Zresetuj hasło',
     expiry: 'Link wygaśnie za 60 minut.',
     ignore: 'Jeśli to nie Ty, zignoruj tę wiadomość — Twoje hasło pozostanie bez zmian.',

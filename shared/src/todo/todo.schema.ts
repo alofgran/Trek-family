@@ -16,6 +16,7 @@ export const todoCreateItemRequestSchema = z.object({
   due_date: z.string().optional(),
   description: z.string().optional(),
   assigned_user_id: z.number().optional(),
+  assigned_traveler_id: z.number().nullable().optional(),
   priority: z.number().optional(),
 });
 export type TodoCreateItemRequest = z.infer<typeof todoCreateItemRequestSchema>;
@@ -27,6 +28,7 @@ export const todoUpdateItemRequestSchema = z.object({
   due_date: z.string().optional(),
   description: z.string().optional(),
   assigned_user_id: z.number().optional(),
+  assigned_traveler_id: z.number().nullable().optional(),
   priority: z.number().optional(),
 });
 export type TodoUpdateItemRequest = z.infer<typeof todoUpdateItemRequestSchema>;

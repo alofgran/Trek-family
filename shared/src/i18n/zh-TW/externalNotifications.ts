@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const zhTW: NotificationLocale = {
   email: {
-    footer: '您收到這封郵件是因為您在 TREK 中啟用了通知。',
+    footer: '您收到這封郵件是因為您在 TREK FAMILY 中啟用了通知。',
     manage: '管理偏好設定',
     madeWith: 'Made with',
-    openTrek: '開啟 TREK',
+    openTrek: '開啟 TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const zhTW: NotificationLocale = {
       title: `待辦事項即將到期：${p.todo}`,
       body: `「${p.trip}」中的「${p.todo}」將於 ${p.due} 到期。`,
     }),
+    document_expiry: (p) => ({
+      title: `文件即將到期：${p.documentType}`,
+      body: `${p.traveler ? `（${p.traveler}）` : ''}用於「${p.trip}」的${p.documentType}將於 ${p.expiry} 到期。`,
+    }),
+    age_band_update: (p) => ({
+      title: `旅伴可能已進入新的年齡層：${p.traveler}`,
+      body: `${p.traveler} 現在的年齡適合歸類為 ${p.newType} 而非 ${p.oldType}。如果正確，請在設定中更新。`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `缺少交通預訂：${p.trip}`,
+      body: `${p.travelers} 可能還沒有預訂「${p.trip}」的交通。`,
+    }),
     vacay_invite: (p) => ({
       title: 'Vacay 融合邀請',
-      body: `${p.actor} 邀請您合併假期計畫。開啟 TREK 以接受或拒絕。`,
+      body: `${p.actor} 邀請您合併假期計畫。開啟 TREK FAMILY 以接受或拒絕。`,
     }),
     photos_shared: (p) => ({
       title: `已分享 ${p.count} 張照片`,
@@ -52,7 +64,7 @@ const zhTW: NotificationLocale = {
   passwordReset: {
     subject: '重設您的密碼',
     greeting: '您好',
-    body: '我們收到了重設您 TREK 帳號密碼的請求。點擊下方按鈕以設定新密碼。',
+    body: '我們收到了重設您 TREK FAMILY 帳號密碼的請求。點擊下方按鈕以設定新密碼。',
     ctaIntro: '重設密碼',
     expiry: '此連結將於 60 分鐘後失效。',
     ignore: '若非您本人發起的請求，請忽略此郵件 — 您的密碼不會變更。',

@@ -499,7 +499,7 @@ describe('File download', () => {
     expect(dl.status).toBe(200);
   });
 
-  it('FILE-011 — GET /:id/download with trek_session cookie downloads file', async () => {
+  it('FILE-011 — GET /:id/download with trek_family_session cookie downloads file', async () => {
     const { user } = createUser(testDb);
     const trip = createTrip(testDb, user.id);
     const upload = await uploadFile(trip.id, user.id, FIXTURE_PDF);
@@ -509,7 +509,7 @@ describe('File download', () => {
 
     const dl = await request(app)
       .get(`/api/trips/${trip.id}/files/${fileId}/download`)
-      .set('Cookie', `trek_session=${token}`);
+      .set('Cookie', `trek_family_session=${token}`);
     expect(dl.status).toBe(200);
   });
 });

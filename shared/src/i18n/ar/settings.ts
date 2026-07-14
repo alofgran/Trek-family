@@ -192,7 +192,7 @@ const settings: TranslationStrings = {
   'settings.about.supporters.since': 'داعم منذ {date}',
   'settings.about.supporters.tierEmpty': 'كن الأول',
   'settings.about.description':
-    'TREK هو مخطط سفر مستضاف ذاتيًا يساعدك على تنظيم رحلاتك من أول فكرة حتى آخر ذكرى. تخطيط يومي، ميزانية، قوائم تعبئة، صور والمزيد — كل شيء في مكان واحد، على خادمك الخاص.',
+    'TREK FAMILY هو مخطط سفر مستضاف ذاتيًا يساعدك على تنظيم رحلاتك من أول فكرة حتى آخر ذكرى. تخطيط يومي، ميزانية، قوائم تعبئة، صور والمزيد — كل شيء في مكان واحد، على خادمك الخاص.',
   'settings.about.madeWith': 'صُنع بـ',
   'settings.about.madeBy': 'بواسطة موريس ومجتمع مفتوح المصدر متنامٍ.',
   'settings.username': 'اسم المستخدم',
@@ -307,7 +307,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': 'فعّل هذا فقط لنسخة موثوقة على شبكتك الخاصة.',
   'settings.airtrail.writeBack': 'كتابة التغييرات إلى AirTrail',
   'settings.airtrail.writeBackHint':
-    'مُعطّل افتراضيًا: AirTrail هو مصدر الحقيقة وTREK يقرأ منه فقط. فعّله لإرسال التعديلات التي تجريها في TREK إلى AirTrail.',
+    'مُعطّل افتراضيًا: AirTrail هو مصدر الحقيقة وTREK يقرأ منه فقط. فعّله لإرسال التعديلات التي تجريها في TREK FAMILY إلى AirTrail.',
   'settings.airtrail.connected': 'متصل',
   'settings.airtrail.notConnected': 'غير متصل',
   'settings.airtrail.toast.saved': 'تم حفظ اتصال AirTrail',

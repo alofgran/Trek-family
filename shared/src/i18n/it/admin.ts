@@ -159,7 +159,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': 'Impossibile salvare',
   'admin.tabs.addons': 'Moduli',
   'admin.addons.title': 'Moduli',
-  'admin.addons.subtitle': 'Abilita o disabilita le funzionalità per personalizzare la tua esperienza TREK.',
+  'admin.addons.subtitle': 'Abilita o disabilita le funzionalità per personalizzare la tua esperienza TREK FAMILY.',
   'admin.addons.catalog.packing.name': 'Liste',
   'admin.addons.catalog.packing.description': 'Liste di imballaggio e attività da svolgere per i tuoi viaggi',
   'admin.addons.catalog.budget.name': 'Budget',
@@ -192,7 +192,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'Dati meteo',
   'admin.weather.badge': 'Dal 24 marzo 2026',
   'admin.weather.description':
-    'TREK utilizza Open-Meteo come fonte dei dati meteo. Open-Meteo è un servizio meteo gratuito e open-source — non è richiesta alcuna chiave API.',
+    'TREK FAMILY utilizza Open-Meteo come fonte dei dati meteo. Open-Meteo è un servizio meteo gratuito e open-source — non è richiesta alcuna chiave API.',
   'admin.weather.forecast': 'Previsioni a 16 giorni',
   'admin.weather.forecastDesc': 'In precedenza 5 giorni (OpenWeatherMap)',
   'admin.weather.climate': 'Dati climatici storici',

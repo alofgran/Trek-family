@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import type { PublicConfig } from '@trek/shared';
+import type { PublicConfig } from '@trek-family/shared';
 import { DEFAULT_LANGUAGE } from '../../config';
 
 /**

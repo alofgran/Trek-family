@@ -39,7 +39,7 @@ vi.mock('../../src/services/adminService', () => ({ getCollabFeatures, getBagTra
 vi.mock('../../src/services/memories/helpersService', () => ({ getPhotoProviderConfig }));
 
 import { AddonsModule } from '../../src/nest/addons/addons.module';
-import { TrekExceptionFilter } from '../../src/nest/common/trek-exception.filter';
+import { TrekFamilyExceptionFilter } from '../../src/nest/common/trek-family-exception.filter';
 
 describe('GET /api/addons e2e (real auth guard + temp SQLite)', () => {
   let server: Server;
@@ -49,7 +49,7 @@ describe('GET /api/addons e2e (real auth guard + temp SQLite)', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AddonsModule] }).compile();
     const nest = moduleRef.createNestApplication();
     nest.use(cookieParser());
-    nest.useGlobalFilters(new TrekExceptionFilter());
+    nest.useGlobalFilters(new TrekFamilyExceptionFilter());
     await nest.init();
     return nest;
   }

@@ -158,7 +158,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': 'Uložení se nezdařilo',
   'admin.tabs.addons': 'Doplňky',
   'admin.addons.title': 'Doplňky',
-  'admin.addons.subtitle': 'Zapněte nebo vypněte funkce a přizpůsobte si TREK.',
+  'admin.addons.subtitle': 'Zapněte nebo vypněte funkce a přizpůsobte si TREK FAMILY.',
   'admin.addons.catalog.memories.name': 'Fotky (Immich)',
   'admin.addons.catalog.memories.description': 'Sdílejte cestovní fotky přes vaši instanci Immich',
   'admin.addons.catalog.packing.name': 'Seznamy',
@@ -242,7 +242,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'Data o počasí',
   'admin.weather.badge': 'Od 24. března 2026',
   'admin.weather.description':
-    'TREK používá Open-Meteo jako zdroj dat. Je to bezplatná open-source služba – není vyžadován API klíč.',
+    'TREK FAMILY používá Open-Meteo jako zdroj dat. Je to bezplatná open-source služba – není vyžadován API klíč.',
   'admin.weather.forecast': 'Předpověď na 16 dní',
   'admin.weather.forecastDesc': 'Dříve 5 dní (OpenWeatherMap)',
   'admin.weather.climate': 'Historická klimatická data',

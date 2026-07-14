@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const es: NotificationLocale = {
   email: {
-    footer: 'Recibiste esto porque tienes las notificaciones activadas en TREK.',
+    footer: 'Recibiste esto porque tienes las notificaciones activadas en TREK FAMILY.',
     manage: 'Gestionar preferencias',
     madeWith: 'Made with',
-    openTrek: 'Abrir TREK',
+    openTrek: 'Abrir TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const es: NotificationLocale = {
       title: `Tarea pendiente: ${p.todo}`,
       body: `"${p.todo}" en "${p.trip}" vence el ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Documento por vencer: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} para "${p.trip}" vence el ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `El viajero pudo haber cambiado de grupo de edad: ${p.traveler}`,
+      body: `${p.traveler} ya tiene edad para ser ${p.newType} en lugar de ${p.oldType}. Actualiza en Ajustes si es correcto.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Reserva de transporte faltante: ${p.trip}`,
+      body: `${p.travelers} podría no tener transporte reservado todavía para "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Invitación Vacay Fusion',
-      body: `${p.actor} te invitó a fusionar planes de vacaciones. Abre TREK para aceptar o rechazar.`,
+      body: `${p.actor} te invitó a fusionar planes de vacaciones. Abre TREK FAMILY para aceptar o rechazar.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} fotos compartidas`,
@@ -52,7 +64,7 @@ const es: NotificationLocale = {
   passwordReset: {
     subject: 'Restablecer tu contraseña',
     greeting: 'Hola',
-    body: 'Recibimos una solicitud para restablecer la contraseña de tu cuenta de TREK. Haz clic en el botón de abajo para establecer una nueva contraseña.',
+    body: 'Recibimos una solicitud para restablecer la contraseña de tu cuenta de TREK FAMILY. Haz clic en el botón de abajo para establecer una nueva contraseña.',
     ctaIntro: 'Restablecer contraseña',
     expiry: 'Este enlace caduca en 60 minutos.',
     ignore: 'Si no solicitaste esto, puedes ignorar este correo — tu contraseña no cambiará.',

@@ -220,11 +220,11 @@ export interface TestPackingItem {
 export function createPackingItem(
   db: Database.Database,
   tripId: number,
-  overrides: Partial<{ name: string; category: string }> = {}
+  overrides: Partial<{ name: string; category: string; checked: number }> = {}
 ): TestPackingItem {
   const result = db.prepare(
-    'INSERT INTO packing_items (trip_id, name, category, checked) VALUES (?, ?, ?, 0)'
-  ).run(tripId, overrides.name ?? 'Test Item', overrides.category ?? 'Clothing');
+    'INSERT INTO packing_items (trip_id, name, category, checked) VALUES (?, ?, ?, ?)'
+  ).run(tripId, overrides.name ?? 'Test Item', overrides.category ?? 'Clothing', overrides.checked ?? 0);
   return db.prepare('SELECT * FROM packing_items WHERE id = ?').get(result.lastInsertRowid) as TestPackingItem;
 }
 

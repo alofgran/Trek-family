@@ -395,7 +395,35 @@ describe('Packing — apply-template, bag members, save-as-template', () => {
     expect(res.body.count).toBeGreaterThan(0);
   });
 
-  it('PACK-015b — POST /apply-template/:id for empty template returns 404', async () => {
+  it('PACK-015c — re-applying the same template to the same traveler a second time returns 200 with count 0, not a 422 error', async () => {
+    const { user } = createUser(testDb);
+    const trip = createTrip(testDb, user.id);
+    const traveler = testDb.prepare(
+      'INSERT INTO travelers (managed_by_user_id, name, type) VALUES (?, ?, ?)'
+    ).run(user.id, 'Lucy', 'child');
+
+    const tpl = testDb.prepare("INSERT INTO packing_templates (name, created_by) VALUES ('Beach', ?)").run(user.id);
+    const cat = testDb.prepare("INSERT INTO packing_template_categories (template_id, name, sort_order) VALUES (?, 'Essentials', 0)").run(tpl.lastInsertRowid);
+    testDb.prepare("INSERT INTO packing_template_items (category_id, name, sort_order) VALUES (?, 'Sunscreen', 0)").run(cat.lastInsertRowid);
+    const templateId = tpl.lastInsertRowid;
+
+    const first = await request(app)
+      .post(`/api/trips/${trip.id}/packing/apply-template/${templateId}`)
+      .set('Cookie', authCookie(user.id))
+      .send({ traveler_ids: [traveler.lastInsertRowid] });
+    expect(first.status).toBe(200);
+    expect(first.body.count).toBeGreaterThan(0);
+
+    const second = await request(app)
+      .post(`/api/trips/${trip.id}/packing/apply-template/${templateId}`)
+      .set('Cookie', authCookie(user.id))
+      .send({ traveler_ids: [traveler.lastInsertRowid] });
+    expect(second.status).toBe(200);
+    expect(second.body.count).toBe(0);
+    expect(second.body.items).toEqual([]);
+  });
+
+  it('PACK-015b — POST /apply-template/:id for empty template returns 422', async () => {
     const { user } = createUser(testDb);
     const trip = createTrip(testDb, user.id);
 
@@ -407,7 +435,7 @@ describe('Packing — apply-template, bag members, save-as-template', () => {
       .post(`/api/trips/${trip.id}/packing/apply-template/${emptyTemplateId}`)
       .set('Cookie', authCookie(user.id));
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(422);
     expect(res.body.error).toBeDefined();
   });
 

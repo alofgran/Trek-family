@@ -87,7 +87,7 @@ afterAll(async () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('Login', () => {
-  it('AUTH-001 — successful login returns 200, user object, and trek_session cookie', async () => {
+  it('AUTH-001 — successful login returns 200, user object, and trek_family_session cookie', async () => {
     const { user, password } = createUser(testDb);
     const res = await request(app).post('/api/auth/login').send({ email: user.email, password });
     expect(res.status).toBe(200);
@@ -97,7 +97,7 @@ describe('Login', () => {
     const cookies: string[] = Array.isArray(res.headers['set-cookie'])
       ? res.headers['set-cookie']
       : [res.headers['set-cookie']];
-    expect(cookies.some((c: string) => c.includes('trek_session'))).toBe(true);
+    expect(cookies.some((c: string) => c.includes('trek_family_session'))).toBe(true);
   });
 
   it('AUTH-002 — wrong password returns 401 with generic message', async () => {
@@ -120,7 +120,7 @@ describe('Login', () => {
     const cookies: string[] = Array.isArray(res.headers['set-cookie'])
       ? res.headers['set-cookie']
       : (res.headers['set-cookie'] ? [res.headers['set-cookie']] : []);
-    const sessionCookie = cookies.find((c: string) => c.includes('trek_session'));
+    const sessionCookie = cookies.find((c: string) => c.includes('trek_family_session'));
     expect(sessionCookie).toBeDefined();
     expect(sessionCookie).toMatch(/expires=Thu, 01 Jan 1970|Max-Age=0/i);
   });
@@ -142,7 +142,7 @@ describe('Registration', () => {
     const cookies: string[] = Array.isArray(res.headers['set-cookie'])
       ? res.headers['set-cookie']
       : [res.headers['set-cookie']];
-    expect(cookies.some((c: string) => c.includes('trek_session'))).toBe(true);
+    expect(cookies.some((c: string) => c.includes('trek_family_session'))).toBe(true);
   });
 
   it('AUTH-006 — registration with weak password is rejected', async () => {
@@ -414,7 +414,7 @@ describe('MFA', () => {
     const cookies: string[] = Array.isArray(verifyRes.headers['set-cookie'])
       ? verifyRes.headers['set-cookie']
       : [verifyRes.headers['set-cookie']];
-    expect(cookies.some((c: string) => c.includes('trek_session'))).toBe(true);
+    expect(cookies.some((c: string) => c.includes('trek_family_session'))).toBe(true);
   });
 
   it('AUTH-017 — verify-login with invalid TOTP code returns 401', async () => {

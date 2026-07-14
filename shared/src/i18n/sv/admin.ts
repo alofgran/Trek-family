@@ -212,7 +212,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': 'Det gick inte att spara',
   'admin.tabs.addons': 'Tillägg',
   'admin.addons.title': 'Tillägg',
-  'admin.addons.subtitle': 'Aktivera eller inaktivera funktioner för att anpassa din TREK-upplevelse.',
+  'admin.addons.subtitle': 'Aktivera eller inaktivera funktioner för att anpassa din TREK FAMILY-upplevelse.',
   'admin.addons.catalog.packing.name': 'Listor',
   'admin.addons.catalog.packing.description': 'Packlistor och saker att göra inför dina resor',
   'admin.addons.catalog.budget.name': 'Budget',
@@ -245,7 +245,7 @@ const admin: TranslationStrings = {
   'admin.weather.title': 'Väderdata',
   'admin.weather.badge': 'Sedan den 24 mars 2026',
   'admin.weather.description':
-    'TREK använder Open-Meteo som källa för väderdata. Open-Meteo är en kostnadsfri vädertjänst med öppen källkod – ingen API-nyckel krävs.',
+    'TREK FAMILY använder Open-Meteo som källa för väderdata. Open-Meteo är en kostnadsfri vädertjänst med öppen källkod – ingen API-nyckel krävs.',
   'admin.weather.forecast': '16-dagarsprognos',
   'admin.weather.forecastDesc': 'Tidigare 5 dagar (OpenWeatherMap)',
   'admin.weather.climate': 'Historiska klimatdata',

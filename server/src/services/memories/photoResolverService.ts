@@ -8,7 +8,7 @@ import { streamSynologyAsset, fetchSynologyThumbnailBytes, getSynologyAssetInfo 
 import type { ServiceResult, AssetInfo } from './helpersService';
 import { fail, success } from './helpersService';
 import { encrypt_api_key, decrypt_api_key } from '../apiKeyCrypto';
-import * as photoCache from './trekPhotoCache';
+import * as photoCache from './trekFamilyPhotoCache';
 import { ensureLocalThumbnail } from './thumbnailService';
 
 // ── Lookup / Register ────────────────────────────────────────────────────

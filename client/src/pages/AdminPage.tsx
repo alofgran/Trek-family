@@ -11,7 +11,7 @@ import AddonManager from '../components/Admin/AddonManager'
 import PackingTemplateManager from '../components/Admin/PackingTemplateManager'
 import AuditLogPanel from '../components/Admin/AuditLogPanel'
 import AdminMcpTokensPanel from '../components/Admin/AdminMcpTokensPanel'
-import { Users, Map, Briefcase, Shield, FileText, SlidersHorizontal, UserCog, Puzzle, Settings as SettingsIcon, Bell, Database, ScrollText, KeyRound, GitBranch, Bug } from 'lucide-react'
+import { Users, Map, Briefcase, Shield, FileText, SlidersHorizontal, UserCog, Puzzle, Settings as SettingsIcon, Bell, Database, ScrollText, KeyRound, GitBranch, Bug, Backpack, Sparkles } from 'lucide-react'
 import PageSidebar, { type PageSidebarTab } from '../components/Layout/PageSidebar'
 import { useAdmin } from './admin/useAdmin'
 import AdminUpdateBanner from './admin/AdminUpdateBanner'
@@ -19,6 +19,7 @@ import AdminStatCard from './admin/AdminStatCard'
 import AdminUsersTab from './admin/AdminUsersTab'
 import AdminSettingsTab from './admin/AdminSettingsTab'
 import AdminNotificationsTab from './admin/AdminNotificationsTab'
+import AdminAiSettingsTab from './admin/AdminAiSettingsTab'
 import AdminUserModals from './admin/AdminUserModals'
 
 export default function AdminPage(): React.ReactElement {
@@ -42,6 +43,7 @@ export default function AdminPage(): React.ReactElement {
     { id: 'addons', label: t('admin.tabs.addons'), icon: Puzzle },
     { id: 'settings', label: t('admin.tabs.settings'), icon: SettingsIcon },
     { id: 'notifications', label: t('admin.tabs.notifications'), icon: Bell },
+    { id: 'ai-parsing', label: t('admin.tabs.aiParsing'), icon: Sparkles },
     { id: 'backup', label: t('admin.tabs.backup'), icon: Database },
     { id: 'audit', label: t('admin.tabs.audit'), icon: ScrollText },
     ...(mcpEnabled ? [{ id: 'mcp-tokens', label: t('admin.tabs.mcpTokens'), icon: KeyRound }] : []),
@@ -93,10 +95,11 @@ export default function AdminPage(): React.ReactElement {
 
           {/* Stats */}
           {stats && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
               {[
                 { label: t('admin.stats.users'), value: stats.totalUsers, icon: Users },
                 { label: t('admin.stats.trips'), value: stats.totalTrips, icon: Briefcase },
+                { label: t('admin.stats.travelers'), value: stats.totalTravelers || 0, icon: Backpack },
                 { label: t('admin.stats.places'), value: stats.totalPlaces, icon: Map },
                 { label: t('admin.stats.files'), value: stats.totalFiles || 0, icon: FileText },
               ].map(({ label, value, icon: Icon }) => (
@@ -145,6 +148,10 @@ export default function AdminPage(): React.ReactElement {
 
           {activeTab === 'notifications' && (
             <AdminNotificationsTab admin={admin} t={t} />
+          )}
+
+          {activeTab === 'ai-parsing' && (
+            <AdminAiSettingsTab admin={admin} t={t} />
           )}
 
           {activeTab === 'backup' && <BackupPanel />}

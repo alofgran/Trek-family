@@ -2,10 +2,10 @@ import type { NotificationLocale } from '../externalNotifications/types';
 
 const id: NotificationLocale = {
   email: {
-    footer: 'Anda menerima ini karena Anda telah mengaktifkan notifikasi di TREK.',
+    footer: 'Anda menerima ini karena Anda telah mengaktifkan notifikasi di TREK FAMILY.',
     manage: 'Kelola preferensi di Pengaturan',
     madeWith: 'Dibuat dengan',
-    openTrek: 'Buka TREK',
+    openTrek: 'Buka TREK FAMILY',
   },
   events: {
     trip_invite: (p) => ({
@@ -24,9 +24,21 @@ const id: NotificationLocale = {
       title: `Tugas jatuh tempo: ${p.todo}`,
       body: `"${p.todo}" di "${p.trip}" jatuh tempo pada ${p.due}.`,
     }),
+    document_expiry: (p) => ({
+      title: `Dokumen akan segera kedaluwarsa: ${p.documentType}`,
+      body: `${p.traveler ? `(${p.traveler}) ` : ''}${p.documentType} untuk "${p.trip}" kedaluwarsa pada ${p.expiry}.`,
+    }),
+    age_band_update: (p) => ({
+      title: `Traveler mungkin telah memasuki kelompok usia baru: ${p.traveler}`,
+      body: `${p.traveler} sekarang cukup umur untuk menjadi ${p.newType}, bukan ${p.oldType}. Perbarui di Pengaturan jika benar.`,
+    }),
+    missing_traveler_transport: (p) => ({
+      title: `Reservasi transportasi belum ada: ${p.trip}`,
+      body: `${p.travelers} mungkin belum memiliki transportasi yang dipesan untuk "${p.trip}".`,
+    }),
     vacay_invite: (p) => ({
       title: 'Undangan Penggabungan Vacay',
-      body: `${p.actor} mengundang Anda untuk menggabungkan rencana liburan. Buka TREK untuk menerima atau menolak.`,
+      body: `${p.actor} mengundang Anda untuk menggabungkan rencana liburan. Buka TREK FAMILY untuk menerima atau menolak.`,
     }),
     photos_shared: (p) => ({
       title: `${p.count} foto dibagikan`,
@@ -52,7 +64,7 @@ const id: NotificationLocale = {
   passwordReset: {
     subject: 'Setel ulang kata sandi Anda',
     greeting: 'Halo',
-    body: 'Kami menerima permintaan untuk menyetel ulang kata sandi akun TREK Anda. Klik tombol di bawah untuk menetapkan kata sandi baru.',
+    body: 'Kami menerima permintaan untuk menyetel ulang kata sandi akun TREK FAMILY Anda. Klik tombol di bawah untuk menetapkan kata sandi baru.',
     ctaIntro: 'Setel ulang kata sandi',
     expiry: 'Tautan ini kedaluwarsa dalam 60 menit.',
     ignore: 'Jika Anda tidak meminta ini, Anda dapat mengabaikan email ini — kata sandi Anda tidak akan berubah.',

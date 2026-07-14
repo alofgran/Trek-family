@@ -8,14 +8,17 @@ import { useTranslation } from '../../i18n'
 import {
   Plane, Hotel, Utensils, Train, Car, Ship, Bus, Sailboat, Bike, CarTaxiFront, Route, Ticket, FileText, MapPin,
   Calendar, Hash, CheckCircle2, Circle, Pencil, Trash2, Plus, ChevronDown, ChevronRight, Users,
-  ExternalLink, BookMarked, Lightbulb, Link2, Clock, ArrowRight, AlertCircle, Download,
+  ExternalLink, BookMarked, Lightbulb, Link2, Clock, ArrowRight, AlertCircle, Download, Copy,
 } from 'lucide-react'
 import { openFile } from '../../utils/fileDownload'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
-import type { Reservation, Day, TripFile, AssignmentsMap } from '../../types'
+import type { Reservation, Day, TripFile, AssignmentsMap, TripTraveler } from '../../types'
 import { splitReservationDateTime, formatTime } from '../../utils/formatters'
+import { parseReservationMetadata } from '../../utils/flightLegs'
+import { travelersApi } from '../../api/client'
+import { TravelerAvatar } from '../Travelers/TravelerAvatar'
 
 interface AssignmentLookupEntry {
   dayNumber: number
@@ -68,14 +71,16 @@ interface ReservationCardProps {
   tripId: number
   onEdit: (reservation: Reservation) => void
   onDelete: (id: number) => void
+  onDuplicate: (r: Reservation) => void
   files?: TripFile[]
   onNavigateToFiles: () => void
   assignmentLookup: Record<number, AssignmentLookupEntry>
   canEdit: boolean
   days?: Day[]
+  travelers?: TripTraveler[]
 }
 
-function ReservationCard({ r, tripId, onEdit, onDelete, files = [], onNavigateToFiles, assignmentLookup, canEdit, days = [] }: ReservationCardProps) {
+function ReservationCard({ r, tripId, onEdit, onDelete, onDuplicate, files = [], onNavigateToFiles, assignmentLookup, canEdit, days = [], travelers = [] }: ReservationCardProps) {
   const { toggleReservationStatus } = useTripStore()
   const toast = useToast()
   const { t, locale } = useTranslation()
@@ -207,6 +212,17 @@ function ReservationCard({ r, tripId, onEdit, onDelete, files = [], onNavigateTo
             </button>
           )}
           {canEdit && (
+            <button onClick={() => onDuplicate(r)} title={t('common.copy')} className="bg-transparent text-content-faint" style={{
+              appearance: 'none', border: 'none',
+              width: 26, height: 26, borderRadius: 6, display: 'grid', placeItems: 'center',
+              cursor: 'pointer', flexShrink: 0,
+            }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)' }}>
+              <Copy size={13} />
+            </button>
+          )}
+          {canEdit && (
             <button onClick={() => setShowDeleteConfirm(true)} title={t('common.delete')} className="bg-transparent text-content-faint" style={{
               appearance: 'none', border: 'none',
               width: 26, height: 26, borderRadius: 6, display: 'grid', placeItems: 'center',
@@ -302,7 +318,7 @@ function ReservationCard({ r, tripId, onEdit, onDelete, files = [], onNavigateTo
 
         {/* Type-specific metadata */}
         {(() => {
-          const meta = typeof r.metadata === 'string' ? JSON.parse(r.metadata || '{}') : (r.metadata || {})
+          const meta = parseReservationMetadata(r)
           if (!meta || Object.keys(meta).length === 0) return null
           const hasEndpoints = (r.endpoints || []).some(e => e.role === 'from') && (r.endpoints || []).some(e => e.role === 'to')
           const cells: { label: string; value: string }[] = []
@@ -381,6 +397,27 @@ function ReservationCard({ r, tripId, onEdit, onDelete, files = [], onNavigateTo
                   <span style={{ fontSize: 12, color: 'var(--text-muted)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.original_name}</span>
                 </a>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Traveler pills */}
+        {travelers.length > 0 && (
+          <div style={{ paddingTop: 2 }}>
+            <div className={fieldLabelClass}>{t('reservations.passengers')}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            {travelers.map(traveler => (
+              <span key={traveler.id} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '3px 8px 3px 4px', borderRadius: 99,
+                background: `${traveler.color || '#6366f1'}18`,
+                border: `1px solid ${traveler.color || '#6366f1'}40`,
+                fontSize: 11.5, fontWeight: 500, color: 'var(--text-secondary)',
+              }}>
+                <TravelerAvatar traveler={traveler} size={16} />
+                {traveler.name}
+              </span>
+            ))}
             </div>
           </div>
         )}
@@ -496,6 +533,9 @@ export default function ReservationsPanel({ tripId, reservations, days, assignme
   const can = useCanDo()
   const trip = useTripStore((s) => s.trip)
   const canEdit = can('reservation_edit', trip)
+  const tripTravelers = useTripStore(s => s.tripTravelers)
+  const { addReservation } = useTripStore()
+  const toast = useToast()
   const [showHint, setShowHint] = useState(() => !localStorage.getItem('hideReservationHint'))
 
   const storageKey = `trek-reservation-filters-${tripId}`
@@ -505,6 +545,15 @@ export default function ReservationsPanel({ tripId, reservations, days, assignme
       return saved ? new Set(JSON.parse(saved)) : new Set()
     } catch { return new Set() }
   })
+  const [travelerFilters, setTravelerFilters] = useState<Set<number>>(new Set())
+
+  const [reservationTravelers, setReservationTravelers] = useState<Record<number, TripTraveler[]>>({})
+
+  useEffect(() => {
+    travelersApi.listForTripReservations(tripId)
+      .then((data: { travelers: Record<number, TripTraveler[]> }) => setReservationTravelers(data.travelers || {}))
+      .catch(() => {})
+  }, [tripId, reservations])
 
   const toggleTypeFilter = (type: string) => {
     setTypeFilters(prev => {
@@ -515,11 +564,45 @@ export default function ReservationsPanel({ tripId, reservations, days, assignme
     })
   }
 
+  const toggleTravelerFilter = (id: number) => {
+    setTravelerFilters(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  const handleDuplicate = async (r: Reservation) => {
+    const { id: _id, created_at: _ca, updated_at: _ua, ...rest } = r as any
+    // r.metadata arrives from the API as a JSON string (never parsed server-side).
+    // The create endpoint re-stringifies whatever it's given, so spreading the raw
+    // string through would double-encode it — parse it back to an object first so
+    // duplicating a reservation carries over airline/flight number/seat/per-leg data
+    // instead of silently corrupting it.
+    const metadata = parseReservationMetadata(r)
+    try {
+      const created = await addReservation(tripId, { ...rest, metadata, title: `${r.title} (copy)` })
+      if (reservationTravelers[r.id]?.length) {
+        const travIds = reservationTravelers[r.id].map((t: TripTraveler) => t.id)
+        await travelersApi.setForReservation(created.id, travIds)
+        setReservationTravelers(prev => ({ ...prev, [created.id]: reservationTravelers[r.id] }))
+      }
+    } catch {
+      toast.error('Failed to duplicate reservation')
+    }
+  }
+
   const assignmentLookup = useMemo(() => buildAssignmentLookup(days, assignments), [days, assignments])
 
-  const filtered = useMemo(() =>
-    typeFilters.size === 0 ? reservations : reservations.filter(r => typeFilters.has(r.type)),
-  [reservations, typeFilters])
+  const filtered = useMemo(() => {
+    let result = reservations
+    if (typeFilters.size > 0) result = result.filter(r => typeFilters.has(r.type))
+    if (travelerFilters.size > 0) result = result.filter(r => {
+      const rTravelers = reservationTravelers[r.id] || []
+      return rTravelers.some(t => travelerFilters.has(t.id))
+    })
+    return result
+  }, [reservations, typeFilters, travelerFilters, reservationTravelers])
 
   const allPending = filtered.filter(r => r.status !== 'confirmed')
   const allConfirmed = filtered.filter(r => r.status === 'confirmed')
@@ -550,14 +633,14 @@ export default function ReservationsPanel({ tripId, reservations, days, assignme
               <div className="hidden md:block" style={{ width: 1, height: 22, background: 'var(--border-faint)', flexShrink: 0 }} />
               <div className="hidden md:inline-flex" style={{ gap: 4, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
                 <button
-                  onClick={() => { setTypeFilters(new Set()); sessionStorage.removeItem(storageKey) }}
-                  className={typeFilters.size === 0 ? 'bg-surface-card text-content' : 'bg-transparent text-content-muted'}
+                  onClick={() => { setTypeFilters(new Set()); setTravelerFilters(new Set()); sessionStorage.removeItem(storageKey) }}
+                  className={typeFilters.size === 0 && travelerFilters.size === 0 ? 'bg-surface-card text-content' : 'bg-transparent text-content-muted'}
                   style={{
                     appearance: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                     display: 'inline-flex', alignItems: 'center', gap: 6,
                     padding: '6px 12px', borderRadius: 99, fontSize: 13, whiteSpace: 'nowrap',
-                    fontWeight: typeFilters.size === 0 ? 500 : 400,
-                    boxShadow: typeFilters.size === 0 ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                    fontWeight: typeFilters.size === 0 && travelerFilters.size === 0 ? 500 : 400,
+                    boxShadow: typeFilters.size === 0 && travelerFilters.size === 0 ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                     transition: 'all 0.15s ease',
                   }}
                 >
@@ -567,6 +650,7 @@ export default function ReservationsPanel({ tripId, reservations, days, assignme
                     padding: '1px 6px', borderRadius: 99, minWidth: 16, textAlign: 'center',
                   }}>{reservations.length}</span>
                 </button>
+
                 {TYPE_OPTIONS.filter(opt => usedTypes.has(opt.value)).map(opt => {
                   const active = typeFilters.has(opt.value)
                   const Icon = opt.Icon
@@ -593,6 +677,32 @@ export default function ReservationsPanel({ tripId, reservations, days, assignme
                     </button>
                   )
                 })}
+                {tripTravelers.length > 0 && (
+                  <>
+                    <span style={{ width: 1, height: 18, background: 'var(--border-faint)', alignSelf: 'center', flexShrink: 0 }} />
+                    {tripTravelers.map(traveler => {
+                      const active = travelerFilters.has(traveler.id)
+                      return (
+                        <button
+                          key={traveler.id}
+                          onClick={() => toggleTravelerFilter(traveler.id)}
+                          className={active ? 'bg-surface-card text-content' : 'bg-transparent text-content-muted'}
+                          style={{
+                            appearance: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            padding: '5px 10px 5px 6px', borderRadius: 99, fontSize: 13, whiteSpace: 'nowrap',
+                            fontWeight: active ? 500 : 400,
+                            boxShadow: active ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <TravelerAvatar traveler={traveler} size={18} />
+                          {traveler.name}
+                        </button>
+                      )
+                    })}
+                  </>
+                )}
               </div>
             </>
           )}
@@ -662,12 +772,12 @@ export default function ReservationsPanel({ tripId, reservations, days, assignme
           <>
             {allPending.length > 0 && (
               <Section title={t('reservations.pending')} count={allPending.length} accent="gray" storageKey={`trek:bookings-pending-open:${tripId}`}>
-                {allPending.map(r => <ReservationCard key={r.id} r={r} tripId={tripId} onEdit={onEdit} onDelete={onDelete} files={files} onNavigateToFiles={onNavigateToFiles} assignmentLookup={assignmentLookup} canEdit={canEdit} days={days} />)}
+                {allPending.map(r => <ReservationCard key={r.id} r={r} tripId={tripId} onEdit={onEdit} onDelete={onDelete} onDuplicate={handleDuplicate} files={files} onNavigateToFiles={onNavigateToFiles} assignmentLookup={assignmentLookup} canEdit={canEdit} days={days} travelers={reservationTravelers[r.id] || []} />)}
               </Section>
             )}
             {allConfirmed.length > 0 && (
               <Section title={t('reservations.confirmed')} count={allConfirmed.length} accent="green" storageKey={`trek:bookings-confirmed-open:${tripId}`}>
-                {allConfirmed.map(r => <ReservationCard key={r.id} r={r} tripId={tripId} onEdit={onEdit} onDelete={onDelete} files={files} onNavigateToFiles={onNavigateToFiles} assignmentLookup={assignmentLookup} canEdit={canEdit} days={days} />)}
+                {allConfirmed.map(r => <ReservationCard key={r.id} r={r} tripId={tripId} onEdit={onEdit} onDelete={onDelete} onDuplicate={handleDuplicate} files={files} onNavigateToFiles={onNavigateToFiles} assignmentLookup={assignmentLookup} canEdit={canEdit} days={days} travelers={reservationTravelers[r.id] || []} />)}
               </Section>
             )}
           </>

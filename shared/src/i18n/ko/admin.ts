@@ -197,7 +197,7 @@ const admin: TranslationStrings = {
   'admin.packingTemplates.saveError': '저장 실패',
   'admin.tabs.addons': '애드온',
   'admin.addons.title': '애드온',
-  'admin.addons.subtitle': '기능을 활성화 또는 비활성화하여 TREK 경험을 맞춤 설정하세요.',
+  'admin.addons.subtitle': '기능을 활성화 또는 비활성화하여 TREK FAMILY 경험을 맞춤 설정하세요.',
   'admin.addons.catalog.packing.name': '목록',
   'admin.addons.catalog.packing.description': '여행을 위한 짐 목록 및 할 일 작업',
   'admin.addons.catalog.budget.name': '예산',

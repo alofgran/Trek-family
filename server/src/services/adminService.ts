@@ -13,6 +13,7 @@ import { validatePassword } from './passwordPolicy';
 import { getPhotoProviderConfig } from './memories/helpersService';
 import { send as sendNotification } from './notificationService';
 import { resolveAuthToggles } from './authService';
+import { getOrCreateLinkedTraveler } from './travelerService';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -103,13 +104,21 @@ export function createUser(data: { username: string; email: string; password: st
     'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)'
   ).run(username, email, passwordHash, data.role || 'user');
 
+  const newUserId = Number(result.lastInsertRowid);
+
+  try {
+    getOrCreateLinkedTraveler(newUserId);
+  } catch (err) {
+    console.error('[admin] Failed to create linked traveler for user', newUserId, err);
+  }
+
   const user = db.prepare(
     'SELECT id, username, email, role, created_at, updated_at FROM users WHERE id = ?'
-  ).get(result.lastInsertRowid);
+  ).get(newUserId);
 
   return {
     user,
-    insertedId: Number(result.lastInsertRowid),
+    insertedId: newUserId,
     auditDetails: { username, email, role: data.role || 'user' },
   };
 }
@@ -197,7 +206,8 @@ export function getStats() {
   const totalTrips = (db.prepare('SELECT COUNT(*) as count FROM trips').get() as { count: number }).count;
   const totalPlaces = (db.prepare('SELECT COUNT(*) as count FROM places').get() as { count: number }).count;
   const totalFiles = (db.prepare('SELECT COUNT(*) as count FROM trip_files').get() as { count: number }).count;
-  return { totalUsers, totalTrips, totalPlaces, totalFiles };
+  const totalTravelers = (db.prepare('SELECT COUNT(*) as count FROM travelers').get() as { count: number }).count;
+  return { totalUsers, totalTrips, totalPlaces, totalFiles, totalTravelers };
 }
 
 // ── Permissions ────────────────────────────────────────────────────────────
@@ -561,17 +571,24 @@ export function getPackingTemplate(id: string) {
   return { template, categories, items };
 }
 
-export function createPackingTemplate(name: string, createdBy: number) {
+const PACKING_TEMPLATE_TRAVELER_TYPES = ['adult', 'teen', 'child', 'infant'];
+
+export function createPackingTemplate(name: string, createdBy: number, travelerType?: string | null) {
   if (!name?.trim()) return { error: 'Name is required', status: 400 };
-  const result = db.prepare('INSERT INTO packing_templates (name, created_by) VALUES (?, ?)').run(name.trim(), createdBy);
+  const type = travelerType && PACKING_TEMPLATE_TRAVELER_TYPES.includes(travelerType) ? travelerType : null;
+  const result = db.prepare('INSERT INTO packing_templates (name, created_by, traveler_type) VALUES (?, ?, ?)').run(name.trim(), createdBy, type);
   const template = db.prepare('SELECT * FROM packing_templates WHERE id = ?').get(result.lastInsertRowid);
   return { template };
 }
 
-export function updatePackingTemplate(id: string, data: { name?: string }) {
+export function updatePackingTemplate(id: string, data: { name?: string; traveler_type?: string | null }) {
   const template = db.prepare('SELECT * FROM packing_templates WHERE id = ?').get(id);
   if (!template) return { error: 'Template not found', status: 404 };
   if (data.name?.trim()) db.prepare('UPDATE packing_templates SET name = ? WHERE id = ?').run(data.name.trim(), id);
+  if (data.traveler_type !== undefined) {
+    const type = data.traveler_type && PACKING_TEMPLATE_TRAVELER_TYPES.includes(data.traveler_type) ? data.traveler_type : null;
+    db.prepare('UPDATE packing_templates SET traveler_type = ? WHERE id = ?').run(type, id);
+  }
   return { template: db.prepare('SELECT * FROM packing_templates WHERE id = ?').get(id) };
 }
 
@@ -609,19 +626,24 @@ export function deleteTemplateCategory(templateId: string, catId: string) {
 
 // Template items
 
-export function createTemplateItem(templateId: string, catId: string, name: string) {
+export function createTemplateItem(templateId: string, catId: string, name: string, travelerType?: string | null) {
   if (!name?.trim()) return { error: 'Item name is required', status: 400 };
   const cat = db.prepare('SELECT * FROM packing_template_categories WHERE id = ? AND template_id = ?').get(catId, templateId);
   if (!cat) return { error: 'Category not found', status: 404 };
   const maxOrder = db.prepare('SELECT MAX(sort_order) as max FROM packing_template_items WHERE category_id = ?').get(catId) as { max: number | null };
-  const result = db.prepare('INSERT INTO packing_template_items (category_id, name, sort_order) VALUES (?, ?, ?)').run(catId, name.trim(), (maxOrder.max ?? -1) + 1);
+  const type = travelerType && PACKING_TEMPLATE_TRAVELER_TYPES.includes(travelerType) ? travelerType : null;
+  const result = db.prepare('INSERT INTO packing_template_items (category_id, name, sort_order, traveler_type) VALUES (?, ?, ?, ?)').run(catId, name.trim(), (maxOrder.max ?? -1) + 1, type);
   return { item: db.prepare('SELECT * FROM packing_template_items WHERE id = ?').get(result.lastInsertRowid) };
 }
 
-export function updateTemplateItem(itemId: string, data: { name?: string }) {
+export function updateTemplateItem(itemId: string, data: { name?: string; traveler_type?: string | null }) {
   const item = db.prepare('SELECT * FROM packing_template_items WHERE id = ?').get(itemId);
   if (!item) return { error: 'Item not found', status: 404 };
   if (data.name?.trim()) db.prepare('UPDATE packing_template_items SET name = ? WHERE id = ?').run(data.name.trim(), itemId);
+  if (data.traveler_type !== undefined) {
+    const type = data.traveler_type && PACKING_TEMPLATE_TRAVELER_TYPES.includes(data.traveler_type) ? data.traveler_type : null;
+    db.prepare('UPDATE packing_template_items SET traveler_type = ? WHERE id = ?').run(type, itemId);
+  }
   return { item: db.prepare('SELECT * FROM packing_template_items WHERE id = ?').get(itemId) };
 }
 

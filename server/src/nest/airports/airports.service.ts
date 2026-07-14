@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Airport } from '@trek/shared';
+import type { Airport } from '@trek-family/shared';
 import { searchAirports, findByIata } from '../../services/airportService';
 
 /**

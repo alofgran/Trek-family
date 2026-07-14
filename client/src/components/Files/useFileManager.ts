@@ -2,8 +2,9 @@ import { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useToast } from '../shared/Toast'
 import { useTranslation } from '../../i18n'
-import { filesApi } from '../../api/client'
+import { filesApi, healthApi } from '../../api/client'
 import type { Place, Reservation, TripFile, Day, AssignmentsMap } from '../../types'
+import type { DocumentParseResult } from '@trek-family/shared'
 import { useCanDo } from '../../store/permissionsStore'
 import { useTripStore } from '../../store/tripStore'
 import { getAuthUrl } from '../../api/authUrl'
@@ -37,6 +38,15 @@ export function useFileManager({ files = [], onUpload, onDelete, onUpdate, place
   const toast = useToast()
   const can = useCanDo()
   const trip = useTripStore((s) => s.trip)
+
+  // Itinerary parsing needs the kitinerary-extractor binary on the server —
+  // same availability flag the booking-import feature already uses. Checked
+  // once so the UI can hide/disable the option instead of erroring after the
+  // user has already committed to the "parse this?" flow.
+  const [itineraryParseAvailable, setItineraryParseAvailable] = useState(false)
+  useEffect(() => {
+    healthApi.features().then(f => setItineraryParseAvailable(!!f.bookingImport)).catch(() => {})
+  }, [])
   const { t, locale } = useTranslation()
 
   const loadTrash = useCallback(async () => {
@@ -100,6 +110,47 @@ export function useFileManager({ files = [], onUpload, onDelete, onUpdate, place
   const [previewFile, setPreviewFile] = useState(null)
   const [previewFileUrl, setPreviewFileUrl] = useState('')
   const [assignFileId, setAssignFileId] = useState<number | null>(null)
+
+  // Document parsing: askParseFileId shows the "parse this document?" confirm
+  // step; parseFileId + parseResult drive the review modal once parsing runs.
+  const [askParseFileId, setAskParseFileId] = useState<number | null>(null)
+  const [parseFileId, setParseFileId] = useState<number | null>(null)
+  const [parseResult, setParseResult] = useState<DocumentParseResult | null>(null)
+  const [parsing, setParsing] = useState(false)
+
+  const startParse = useCallback(async (fileId: number) => {
+    setParseFileId(fileId)
+    setParseResult(null)
+    setParsing(true)
+    try {
+      const result = await filesApi.parse(tripId, fileId)
+      setParseResult(result)
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || t('files.parse.error'))
+      setParseFileId(null)
+    } finally {
+      setParsing(false)
+    }
+  }, [tripId, toast, t])
+
+  const closeParse = useCallback(() => {
+    setParseFileId(null)
+    setParseResult(null)
+  }, [])
+
+  const confirmItineraryParse = useCallback(async (items: any[]) => {
+    if (!parseFileId) return
+    const result = await filesApi.confirmItineraryParse(tripId, parseFileId, items)
+    await refreshFiles()
+    return result
+  }, [tripId, parseFileId])
+
+  const confirmDocumentParse = useCallback(async (data: { fields: Record<string, string>; expiry_date?: string | null; traveler_id?: number | null }) => {
+    if (!parseFileId) return
+    const result = await filesApi.confirmDocumentParse(tripId, parseFileId, data)
+    await refreshFiles()
+    return result
+  }, [tripId, parseFileId])
 
   const onDrop = useCallback(async (acceptedFiles) => {
     if (acceptedFiles.length === 0) return
@@ -175,7 +226,7 @@ export function useFileManager({ files = [], onUpload, onDelete, onUpdate, place
     }
   }, [previewFile?.url])
 
-  const handleAssign = async (fileId: number, data: { place_id?: number | null; reservation_id?: number | null }) => {
+  const handleAssign = async (fileId: number, data: { place_id?: number | null; reservation_id?: number | null; traveler_id?: number | null; expiry_date?: string | null; document_type?: string | null; description?: string }) => {
     try {
       await filesApi.update(tripId, fileId, data)
       refreshFiles()
@@ -203,6 +254,9 @@ export function useFileManager({ files = [], onUpload, onDelete, onUpdate, place
     previewFile, setPreviewFile, previewFileUrl, assignFileId, setAssignFileId,
     getRootProps, getInputProps, isDragActive, handlePaste, filteredFiles, handleDelete,
     handleAssign, imageFiles, openFile,
+    askParseFileId, setAskParseFileId, parseFileId, parseResult, parsing,
+    startParse, closeParse, confirmItineraryParse, confirmDocumentParse,
+    itineraryParseAvailable,
   }
 }
 

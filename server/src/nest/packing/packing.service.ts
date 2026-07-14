@@ -4,6 +4,8 @@ import { broadcast } from '../../websocket';
 import { checkPermission } from '../../services/permissions';
 import type { User } from '../../types';
 import * as svc from '../../services/packingService';
+import * as travelerSvc from '../../services/travelerService';
+import { getWeatherPackingSuggestions } from '../../services/weatherPackingService';
 
 type Trip = NonNullable<ReturnType<typeof svc.verifyTripAccess>>;
 
@@ -31,7 +33,7 @@ export class PackingService {
     return svc.listItems(tripId);
   }
 
-  createItem(tripId: string, data: { name: string; category?: string; checked?: boolean }) {
+  createItem(tripId: string, data: { name: string; category?: string; checked?: boolean; quantity?: number }) {
     return svc.createItem(tripId, data);
   }
 
@@ -71,12 +73,28 @@ export class PackingService {
     return svc.setBagMembers(tripId, bagId, userIds);
   }
 
-  listTemplates() {
-    return svc.listTemplates();
+  getWeatherPackingSuggestions(tripId: string) {
+    return getWeatherPackingSuggestions(tripId);
   }
 
-  applyTemplate(tripId: string, templateId: string) {
-    return svc.applyTemplate(tripId, templateId);
+  listTemplates(userId?: number) {
+    return svc.listTemplates(userId);
+  }
+
+  applyTemplate(tripId: string, templateId: string, travelerIds?: number[]) {
+    return svc.applyTemplate(tripId, templateId, travelerIds);
+  }
+
+  listPersonalTemplates(userId: number) {
+    return travelerSvc.listPersonalTemplates(userId);
+  }
+
+  createPersonalTemplate(userId: number, name: string) {
+    return travelerSvc.createPersonalTemplate(userId, name);
+  }
+
+  deletePersonalTemplate(id: number, userId: number) {
+    return travelerSvc.deletePersonalTemplate(id, userId);
   }
 
   saveAsTemplate(tripId: string, userId: number, name: string) {

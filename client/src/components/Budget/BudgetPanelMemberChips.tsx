@@ -2,6 +2,8 @@ import ReactDOM from 'react-dom'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Pencil, Users, Check } from 'lucide-react'
 import type { BudgetItemMember } from '../../types'
+import { TravelerAvatar } from '../Travelers/TravelerAvatar'
+import { useTripStore } from '../../store/tripStore'
 
 export interface TripMember {
   id: number
@@ -121,14 +123,27 @@ export default function BudgetMemberChips({ members = [], tripMembers = [], onSe
     onSetMembers(newIds)
   }
 
+  const tripTravelers = useTripStore(s => s.tripTravelers)
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
-      {members.map(m => (
-        <ChipWithTooltip key={m.user_id} label={m.username} avatarUrl={m.avatar_url} size={chipSize}
-          paid={!!m.paid}
-          onClick={!readOnly && onTogglePaid ? () => onTogglePaid(m.user_id, !m.paid) : undefined}
-        />
-      ))}
+      {members.map(m => {
+        const traveler = m.traveler_id ? tripTravelers.find(t => t.id === m.traveler_id) : null
+        if (traveler) {
+          return (
+            <div key={`${m.user_id}:${m.traveler_id}`} title={traveler.name} onClick={!readOnly && onTogglePaid ? () => onTogglePaid(m.user_id, !m.paid) : undefined}
+              style={{ cursor: !readOnly && onTogglePaid ? 'pointer' : 'default' }}>
+              <TravelerAvatar traveler={traveler} size={chipSize} />
+            </div>
+          )
+        }
+        return (
+          <ChipWithTooltip key={m.user_id} label={m.username || '?'} avatarUrl={m.avatar_url ?? null} size={chipSize}
+            paid={!!m.paid}
+            onClick={!readOnly && onTogglePaid ? () => onTogglePaid(m.user_id, !m.paid) : undefined}
+          />
+        )
+      })}
       {!readOnly && (
         <button ref={btnRef} onClick={openDropdown}
           style={{

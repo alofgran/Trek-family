@@ -48,6 +48,7 @@ export function useTodoList(tripId: number, items: TodoItem[], addItemSignal: nu
   const [newCategoryName, setNewCategoryName] = useState('')
   const [members, setMembers] = useState<Member[]>([])
   const [currentUserId, setCurrentUserId] = useState<number | null>(null)
+  const tripTravelers = useTripStore(s => s.tripTravelers)
 
   useEffect(() => {
     apiClient.get(`/trips/${tripId}/members`).then(r => {
@@ -67,11 +68,18 @@ export function useTodoList(tripId: number, items: TodoItem[], addItemSignal: nu
 
   const today = new Date().toISOString().split('T')[0]
 
+  const myLinkedTravelerId = useMemo(() =>
+    currentUserId ? (tripTravelers.find(t => (t as any).linked_user_id === currentUserId)?.id ?? null) : null,
+  [currentUserId, tripTravelers])
+
   const filtered = useMemo(() => {
+    const isMyItem = (i: TodoItem) =>
+      (currentUserId !== null && (i as any).assigned_user_id === currentUserId) ||
+      (myLinkedTravelerId !== null && (i as any).assigned_traveler_id === myLinkedTravelerId)
     let result: TodoItem[]
     if (filter === 'all') result = items.filter(i => !i.checked)
     else if (filter === 'done') result = items.filter(i => !!i.checked)
-    else if (filter === 'my') result = items.filter(i => !i.checked && i.assigned_user_id === currentUserId)
+    else if (filter === 'my') result = items.filter(i => !i.checked && isMyItem(i))
     else if (filter === 'overdue') result = items.filter(i => !i.checked && i.due_date && i.due_date < today)
     else result = items.filter(i => i.category === filter)
     if (sortByPrio) result = [...result].sort((a, b) => {
@@ -80,13 +88,18 @@ export function useTodoList(tripId: number, items: TodoItem[], addItemSignal: nu
       return ap - bp
     })
     return result
-  }, [items, filter, currentUserId, today, sortByPrio])
+  }, [items, filter, currentUserId, myLinkedTravelerId, today, sortByPrio])
 
   const selectedItem = items.find(i => i.id === selectedId) || null
   const totalCount = items.length
   const doneCount = items.filter(i => !!i.checked).length
   const overdueCount = items.filter(i => !i.checked && i.due_date && i.due_date < today).length
-  const myCount = currentUserId ? items.filter(i => !i.checked && i.assigned_user_id === currentUserId).length : 0
+  const myCount = useMemo(() => {
+    const isMyItem = (i: TodoItem) =>
+      (currentUserId !== null && (i as any).assigned_user_id === currentUserId) ||
+      (myLinkedTravelerId !== null && (i as any).assigned_traveler_id === myLinkedTravelerId)
+    return items.filter(i => !i.checked && isMyItem(i)).length
+  }, [items, currentUserId, myLinkedTravelerId])
 
   const addCategory = () => {
     const name = newCategoryName.trim()

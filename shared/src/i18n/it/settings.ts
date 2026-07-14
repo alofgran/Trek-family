@@ -185,7 +185,7 @@ const settings: TranslationStrings = {
   'settings.about.supporter.tier.budgetTraveller': 'Budget Traveller',
   'settings.about.supporter.tier.hostelBunkmate': 'Hostel Bunkmate',
   'settings.about.description':
-    "TREK è un pianificatore di viaggi self-hosted che ti aiuta a organizzare i tuoi viaggi dalla prima idea all'ultimo ricordo. Pianificazione giornaliera, budget, liste bagagli, foto e molto altro — tutto in un unico posto, sul tuo server.",
+    "TREK FAMILY è un pianificatore di viaggi self-hosted che ti aiuta a organizzare i tuoi viaggi dalla prima idea all'ultimo ricordo. Pianificazione giornaliera, budget, liste bagagli, foto e molto altro — tutto in un unico posto, sul tuo server.",
   'settings.about.madeWith': 'Fatto con',
   'settings.about.madeBy': 'da Maurice e una crescente comunità open-source.',
   'settings.username': 'Nome utente',
@@ -318,7 +318,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': "Abilita solo per un'istanza attendibile sulla tua rete.",
   'settings.airtrail.writeBack': 'Scrivi le modifiche su AirTrail',
   'settings.airtrail.writeBackHint':
-    'Disattivato per impostazione predefinita: AirTrail è la fonte attendibile e TREK si limita a leggerlo. Attiva per inviare ad AirTrail le modifiche fatte in TREK.',
+    'Disattivato per impostazione predefinita: AirTrail è la fonte attendibile e TREK FAMILY si limita a leggerlo. Attiva per inviare ad AirTrail le modifiche fatte in TREK FAMILY.',
   'settings.airtrail.connected': 'Connesso',
   'settings.airtrail.notConnected': 'Non connesso',
   'settings.airtrail.toast.saved': 'Connessione AirTrail salvata',

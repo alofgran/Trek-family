@@ -147,6 +147,8 @@ const dashboard: TranslationStrings = {
   'dashboard.atlas.aroundEquator': '≈ {count}× around the equator',
   'dashboard.card.idea': 'Idea',
   'dashboard.card.buddyOne': 'Buddy',
+  'dashboard.card.travelerOne': 'Traveler',
+  'dashboard.card.travelerMany': 'Travelers',
   'dashboard.fx.from': 'From',
   'dashboard.fx.to': 'To',
   'dashboard.fx.unavailable': 'Rate unavailable',

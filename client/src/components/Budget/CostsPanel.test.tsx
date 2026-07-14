@@ -4,8 +4,9 @@ import { http, HttpResponse } from 'msw'
 import { server } from '../../../tests/helpers/msw/server'
 import { useAuthStore } from '../../store/authStore'
 import { useTripStore } from '../../store/tripStore'
+import { useSettingsStore } from '../../store/settingsStore'
 import { resetAllStores, seedStore } from '../../../tests/helpers/store'
-import { buildUser, buildTrip, buildBudgetItem } from '../../../tests/helpers/factories'
+import { buildUser, buildTrip, buildBudgetItem, buildSettings } from '../../../tests/helpers/factories'
 import CostsPanel from './CostsPanel'
 
 const tripMembers = [
@@ -13,10 +14,20 @@ const tripMembers = [
   { id: 2, username: 'bob', avatar_url: null },
 ]
 
+// Each account holder's own linked traveler — mirrors what a real trip bootstrap
+// (loadTrip) populates tripTravelers with before the Costs tab ever mounts.
+const tripTravelers = [
+  { id: 101, managed_by_user_id: 1, linked_user_id: 1, name: 'Alice', avatar: null, color: null, type: 'adult' as const, created_at: '2025-01-01T00:00:00.000Z', added_at: '2025-01-01T00:00:00.000Z', added_by_user_id: 1 },
+  { id: 102, managed_by_user_id: 2, linked_user_id: 2, name: 'Bob', avatar: null, color: null, type: 'adult' as const, created_at: '2025-01-01T00:00:00.000Z', added_at: '2025-01-01T00:00:00.000Z', added_by_user_id: 2 },
+]
+
 beforeEach(() => {
   resetAllStores()
   seedStore(useAuthStore, { user: buildUser(), isAuthenticated: true })
-  seedStore(useTripStore, { trip: buildTrip({ id: 1, currency: 'EUR' }) })
+  seedStore(useTripStore, { trip: buildTrip({ id: 1, currency: 'EUR' }), tripTravelers })
+  // Match the display currency to the trip currency so amounts render without
+  // going through the (async, network-dependent) cross-currency conversion path.
+  seedStore(useSettingsStore, { settings: buildSettings({ default_currency: 'EUR' }) })
 })
 
 describe('CostsPanel — settlements in the ledger', () => {
@@ -193,5 +204,84 @@ describe('CostsPanel — settlements in the ledger', () => {
     expect(posted!.total_price).toBe(120)
     expect(posted!.member_ids).toEqual([])
     expect(posted!.payers).toEqual([])
+  })
+})
+
+describe('CostsPanel — payer identity uses traveler_id, not the account it settles under', () => {
+  it('shows each traveler\'s own name for payer chips instead of "You" for every child sharing the manager account (#reported bug)', async () => {
+    const parent = buildUser()
+    seedStore(useAuthStore, { user: parent, isAuthenticated: true })
+    seedStore(useTripStore, {
+      trip: buildTrip({ id: 1, currency: 'EUR' }),
+      tripTravelers: [
+        { id: 301, managed_by_user_id: parent.id, linked_user_id: parent.id, name: 'Parent', avatar: null, color: null, type: 'adult' as const, created_at: '2025-01-01T00:00:00.000Z', added_at: '2025-01-01T00:00:00.000Z', added_by_user_id: parent.id },
+        { id: 302, managed_by_user_id: parent.id, linked_user_id: null, name: 'Kid One', avatar: null, color: null, type: 'child' as const, created_at: '2025-01-01T00:00:00.000Z', added_at: '2025-01-01T00:00:00.000Z', added_by_user_id: parent.id },
+        { id: 303, managed_by_user_id: parent.id, linked_user_id: null, name: 'Kid Two', avatar: null, color: null, type: 'child' as const, created_at: '2025-01-01T00:00:00.000Z', added_at: '2025-01-01T00:00:00.000Z', added_by_user_id: parent.id },
+      ],
+    })
+    const item = {
+      ...buildBudgetItem({ trip_id: 1, category: 'food', name: 'Snacks' }),
+      total_price: 20,
+      payers: [
+        { user_id: parent.id, traveler_id: 302, amount: 12, username: 'parent' },
+        { user_id: parent.id, traveler_id: 303, amount: 8, username: 'parent' },
+      ],
+      members: [],
+    }
+    server.use(
+      http.get('/api/trips/1/budget', () => HttpResponse.json({ items: [item] })),
+      http.get('/api/trips/1/budget/settlement', () => HttpResponse.json({ balances: [], flows: [], settlements: [] })),
+    )
+    render(<CostsPanel tripId={1} tripMembers={[{ id: parent.id, username: 'parent', avatar_url: null }]} />)
+
+    await screen.findByText('Snacks')
+    expect(screen.getByTitle('Kid One')).toBeInTheDocument()
+    expect(screen.getByTitle('Kid Two')).toBeInTheDocument()
+    expect(screen.queryByTitle('You')).not.toBeInTheDocument()
+  })
+})
+
+describe('CostsPanel — cost-per-traveler primary summary', () => {
+  it('splits each expense equally across its participating travelers and sums per traveler', async () => {
+    const item = {
+      ...buildBudgetItem({ trip_id: 1, category: 'food', name: 'Dinner' }),
+      total_price: 100,
+      payers: [],
+      members: [
+        { user_id: 1, traveler_id: 101, paid: 0, username: 'alice' },
+        { user_id: 2, traveler_id: 102, paid: 0, username: 'bob' },
+      ],
+    }
+    server.use(
+      http.get('/api/trips/1/budget', () => HttpResponse.json({ items: [item] })),
+      http.get('/api/trips/1/budget/settlement', () => HttpResponse.json({ balances: [], flows: [], settlements: [] })),
+    )
+    render(<CostsPanel tripId={1} tripMembers={tripMembers} />)
+
+    await screen.findByText('Cost per traveler')
+    // "Alice"/"Bob" also appear as the expense row's participant chips, so at
+    // least one match (rather than exactly one) confirms the summary rendered.
+    expect(screen.getAllByText('Alice').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Bob').length).toBeGreaterThan(0)
+    // €100 split 2 ways = €50 each, shown once per traveler row.
+    expect(screen.getAllByText(/50[.,]00/)).toHaveLength(2)
+  })
+
+  it('omits travelers with no attributed cost from the breakdown', async () => {
+    const item = {
+      ...buildBudgetItem({ trip_id: 1, category: 'food', name: 'Solo snack' }),
+      total_price: 10,
+      payers: [],
+      members: [{ user_id: 1, traveler_id: 101, paid: 0, username: 'alice' }],
+    }
+    server.use(
+      http.get('/api/trips/1/budget', () => HttpResponse.json({ items: [item] })),
+      http.get('/api/trips/1/budget/settlement', () => HttpResponse.json({ balances: [], flows: [], settlements: [] })),
+    )
+    render(<CostsPanel tripId={1} tripMembers={tripMembers} />)
+
+    await screen.findByText('Cost per traveler')
+    expect(screen.getAllByText('Alice').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Bob')).not.toBeInTheDocument()
   })
 })

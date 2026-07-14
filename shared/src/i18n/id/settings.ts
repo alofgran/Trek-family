@@ -211,7 +211,7 @@ const settings: TranslationStrings = {
   'settings.about.supporter.tier.budgetTraveller': 'Budget Traveller',
   'settings.about.supporter.tier.hostelBunkmate': 'Hostel Bunkmate',
   'settings.about.description':
-    'TREK adalah perencana perjalanan self-hosted yang membantu kamu mengatur perjalanan dari ide pertama hingga kenangan terakhir. Perencanaan harian, anggaran, daftar bawaan, foto dan masih banyak lagi — semua di satu tempat, di servermu sendiri.',
+    'TREK FAMILY adalah perencana perjalanan self-hosted yang membantu kamu mengatur perjalanan dari ide pertama hingga kenangan terakhir. Perencanaan harian, anggaran, daftar bawaan, foto dan masih banyak lagi — semua di satu tempat, di servermu sendiri.',
   'settings.about.madeWith': 'Dibuat dengan',
   'settings.about.madeBy': 'oleh Maurice dan komunitas open-source yang terus berkembang.',
   'settings.username': 'Nama pengguna',
@@ -318,7 +318,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': 'Aktifkan hanya untuk instans tepercaya di jaringanmu sendiri.',
   'settings.airtrail.writeBack': 'Tulis perubahan kembali ke AirTrail',
   'settings.airtrail.writeBackHint':
-    'Nonaktif secara bawaan: AirTrail adalah sumber kebenaran dan TREK hanya membaca darinya. Aktifkan untuk mengirim perubahan yang dibuat di TREK kembali ke AirTrail.',
+    'Nonaktif secara bawaan: AirTrail adalah sumber kebenaran dan TREK FAMILY hanya membaca darinya. Aktifkan untuk mengirim perubahan yang dibuat di TREK FAMILY kembali ke AirTrail.',
   'settings.airtrail.connected': 'Terhubung',
   'settings.airtrail.notConnected': 'Tidak terhubung',
   'settings.airtrail.toast.saved': 'Koneksi AirTrail disimpan',

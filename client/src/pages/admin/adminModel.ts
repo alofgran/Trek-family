@@ -17,6 +17,7 @@ export interface AdminStats {
   totalTrips: number
   totalPlaces: number
   totalFiles: number
+  totalTravelers: number
 }
 
 export interface OidcConfig {

@@ -5,14 +5,17 @@ import { useTranslation } from '../../i18n'
 import { Plus, Trash2, Edit2, Package, X, Check, ChevronDown, ChevronRight, FolderPlus } from 'lucide-react'
 
 interface TemplateCategory { id: number; template_id: number; name: string; sort_order: number }
-interface TemplateItem { id: number; category_id: number; name: string; sort_order: number }
-interface Template { id: number; name: string; item_count: number; category_count: number; created_by_name: string }
+interface TemplateItem { id: number; category_id: number; name: string; sort_order: number; traveler_type?: string | null }
+interface Template { id: number; name: string; item_count: number; category_count: number; created_by_name: string; traveler_type?: string | null }
+
+const TRAVELER_TYPE_OPTIONS = ['', 'adult', 'teen', 'child', 'infant'] as const
 
 export default function PackingTemplateManager() {
   const [templates, setTemplates] = useState<Template[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [createName, setCreateName] = useState('')
+  const [createTravelerType, setCreateTravelerType] = useState<string>('')
 
   // Expanded template state
   const [expandedId, setExpandedId] = useState<number | null>(null)
@@ -32,6 +35,7 @@ export default function PackingTemplateManager() {
   const [newCatName, setNewCatName] = useState('')
   const [addingItemToCatId, setAddingItemToCatId] = useState<number | null>(null)
   const [newItemName, setNewItemName] = useState('')
+  const [newItemTravelerType, setNewItemTravelerType] = useState('')
   const addItemRef = useRef<HTMLInputElement>(null)
 
   const toast = useToast()
@@ -64,12 +68,19 @@ export default function PackingTemplateManager() {
   const handleCreateTemplate = async () => {
     if (!createName.trim()) return
     try {
-      const data = await adminApi.createPackingTemplate({ name: createName.trim() })
+      const data = await adminApi.createPackingTemplate({ name: createName.trim(), traveler_type: createTravelerType || null })
       setTemplates(prev => [{ ...data.template, item_count: 0, category_count: 0 }, ...prev])
-      setCreateName(''); setShowCreate(false)
+      setCreateName(''); setCreateTravelerType(''); setShowCreate(false)
       setExpandedId(data.template.id); setCategories([]); setItems([])
       toast.success(t('admin.packingTemplates.created'))
     } catch { toast.error(t('admin.packingTemplates.createError')) }
+  }
+
+  const handleChangeTravelerType = async (id: number, travelerType: string) => {
+    try {
+      await adminApi.updatePackingTemplate(id, { traveler_type: travelerType || null })
+      setTemplates(prev => prev.map(tmpl => tmpl.id === id ? { ...tmpl, traveler_type: travelerType || null } : tmpl))
+    } catch { toast.error(t('admin.packingTemplates.saveError')) }
   }
 
   const handleDeleteTemplate = async (id: number) => {
@@ -122,9 +133,9 @@ export default function PackingTemplateManager() {
   const handleAddItem = async (catId: number) => {
     if (!newItemName.trim() || !expandedId) return
     try {
-      const data = await adminApi.addTemplateItem(expandedId, catId, { name: newItemName.trim() })
+      const data = await adminApi.addTemplateItem(expandedId, catId, { name: newItemName.trim(), traveler_type: newItemTravelerType || null })
       setItems(prev => [...prev, data.item])
-      setNewItemName('')
+      setNewItemName(''); setNewItemTravelerType('')
       setTimeout(() => addItemRef.current?.focus(), 30)
     } catch { toast.error(t('admin.packingTemplates.saveError')) }
   }
@@ -135,6 +146,14 @@ export default function PackingTemplateManager() {
       await adminApi.updateTemplateItem(expandedId, itemId, { name: editItemName.trim() })
       setItems(prev => prev.map(i => i.id === itemId ? { ...i, name: editItemName.trim() } : i))
       setEditingItemId(null)
+    } catch { toast.error(t('admin.packingTemplates.saveError')) }
+  }
+
+  const handleChangeItemTravelerType = async (itemId: number, travelerType: string) => {
+    if (!expandedId) return
+    try {
+      await adminApi.updateTemplateItem(expandedId, itemId, { traveler_type: travelerType || null })
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, traveler_type: travelerType || null } : i))
     } catch { toast.error(t('admin.packingTemplates.saveError')) }
   }
 
@@ -170,6 +189,12 @@ export default function PackingTemplateManager() {
           <input autoFocus value={createName} onChange={e => setCreateName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleCreateTemplate(); if (e.key === 'Escape') setShowCreate(false) }}
             placeholder={t('admin.packingTemplates.namePlaceholder')} className={inputStyle} />
+          <select value={createTravelerType} onChange={e => setCreateTravelerType(e.target.value)}
+            className="px-2 py-2 border border-slate-200 rounded-lg text-sm outline-none">
+            {TRAVELER_TYPE_OPTIONS.map(opt => (
+              <option key={opt} value={opt}>{opt ? t(`travelers.type.${opt}`) : t('admin.packingTemplates.anyTraveler')}</option>
+            ))}
+          </select>
           <button onClick={handleCreateTemplate} className={`${btnIcon} text-slate-600 hover:text-slate-900`}><Check size={16} /></button>
           <button onClick={() => setShowCreate(false)} className={`${btnIcon} text-slate-400 hover:text-slate-600`}><X size={16} /></button>
         </div>
@@ -201,6 +226,13 @@ export default function PackingTemplateManager() {
                 <span className="text-xs text-slate-400 px-2 py-0.5 bg-slate-100 rounded-full">
                   {tmpl.category_count} {t('admin.packingTemplates.categories')} · {tmpl.item_count} {t('admin.packingTemplates.items')}
                 </span>
+                <select value={tmpl.traveler_type || ''} onChange={e => handleChangeTravelerType(tmpl.id, e.target.value)}
+                  title={t('admin.packingTemplates.ageBand')}
+                  className="text-xs px-1.5 py-1 border border-slate-200 rounded-lg outline-none text-slate-600">
+                  {TRAVELER_TYPE_OPTIONS.map(opt => (
+                    <option key={opt} value={opt}>{opt ? t(`travelers.type.${opt}`) : t('admin.packingTemplates.anyTraveler')}</option>
+                  ))}
+                </select>
                 <button onClick={() => { setEditingTemplate(tmpl.id); setEditTemplateName(tmpl.name) }}
                   className={`${btnIcon} hover:bg-slate-100 text-slate-400 hover:text-slate-700`}><Edit2 size={14} /></button>
                 <button onClick={() => handleDeleteTemplate(tmpl.id)}
@@ -227,7 +259,7 @@ export default function PackingTemplateManager() {
                             <span className="flex-1 text-xs font-bold text-slate-500 uppercase tracking-wider">{cat.name}</span>
                           )}
                           <span className="text-xs text-slate-400">{catItems.length}</span>
-                          <button onClick={() => { setAddingItemToCatId(addingItemToCatId === cat.id ? null : cat.id); setNewItemName(''); setTimeout(() => addItemRef.current?.focus(), 30) }}
+                          <button onClick={() => { setAddingItemToCatId(addingItemToCatId === cat.id ? null : cat.id); setNewItemName(''); setNewItemTravelerType(''); setTimeout(() => addItemRef.current?.focus(), 30) }}
                             className={`${btnIcon} text-slate-400 hover:text-slate-700`}><Plus size={13} /></button>
                           <button onClick={() => { setEditingCatId(cat.id); setEditCatName(cat.name) }}
                             className={`${btnIcon} text-slate-400 hover:text-slate-700`}><Edit2 size={13} /></button>
@@ -251,6 +283,13 @@ export default function PackingTemplateManager() {
                                 ) : (
                                   <>
                                     <span className="flex-1 text-sm text-slate-700">{item.name}</span>
+                                    <select value={item.traveler_type || ''} onChange={e => handleChangeItemTravelerType(item.id, e.target.value)}
+                                      title={t('admin.packingTemplates.ageBand')}
+                                      className="text-xs px-1 py-0.5 border border-slate-200 rounded outline-none text-slate-500">
+                                      {TRAVELER_TYPE_OPTIONS.map(opt => (
+                                        <option key={opt} value={opt}>{opt ? t(`travelers.type.${opt}`) : t('admin.packingTemplates.anyTraveler')}</option>
+                                      ))}
+                                    </select>
                                     <button onClick={() => { setEditingItemId(item.id); setEditItemName(item.name) }}
                                       className="p-1 rounded opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 transition-all"><Edit2 size={12} /></button>
                                     <button onClick={() => handleDeleteItem(item.id)}
@@ -264,12 +303,19 @@ export default function PackingTemplateManager() {
                             {addingItemToCatId === cat.id && (
                               <div className="flex items-center gap-2 px-4 py-2">
                                 <input ref={addItemRef} value={newItemName} onChange={e => setNewItemName(e.target.value)}
-                                  onKeyDown={e => { if (e.key === 'Enter' && newItemName.trim()) handleAddItem(cat.id); if (e.key === 'Escape') { setAddingItemToCatId(null); setNewItemName('') } }}
+                                  onKeyDown={e => { if (e.key === 'Enter' && newItemName.trim()) handleAddItem(cat.id); if (e.key === 'Escape') { setAddingItemToCatId(null); setNewItemName(''); setNewItemTravelerType('') } }}
                                   placeholder={t('admin.packingTemplates.itemName')}
                                   className="flex-1 px-2 py-1 border border-slate-200 rounded-lg text-sm" />
+                                <select value={newItemTravelerType} onChange={e => setNewItemTravelerType(e.target.value)}
+                                  title={t('admin.packingTemplates.ageBand')}
+                                  className="text-xs px-1.5 py-1 border border-slate-200 rounded-lg outline-none text-slate-600">
+                                  {TRAVELER_TYPE_OPTIONS.map(opt => (
+                                    <option key={opt} value={opt}>{opt ? t(`travelers.type.${opt}`) : t('admin.packingTemplates.anyTraveler')}</option>
+                                  ))}
+                                </select>
                                 <button onClick={() => handleAddItem(cat.id)} disabled={!newItemName.trim()}
                                   className="p-1.5 rounded-lg bg-slate-900 text-white disabled:bg-slate-300 hover:bg-slate-700 transition-colors"><Plus size={13} /></button>
-                                <button onClick={() => { setAddingItemToCatId(null); setNewItemName('') }}
+                                <button onClick={() => { setAddingItemToCatId(null); setNewItemName(''); setNewItemTravelerType('') }}
                                   className="p-1 text-slate-400 hover:text-slate-600"><X size={13} /></button>
                               </div>
                             )}

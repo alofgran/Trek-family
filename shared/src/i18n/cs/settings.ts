@@ -183,7 +183,7 @@ const settings: TranslationStrings = {
   'settings.about.supporter.tier.budgetTraveller': 'Budget Traveller',
   'settings.about.supporter.tier.hostelBunkmate': 'Hostel Bunkmate',
   'settings.about.description':
-    'TREK je samohostovaný plánovač cest, který vám pomůže organizovat výlety od prvního nápadu po poslední vzpomínku. Denní plánování, rozpočet, balicí seznamy, fotky a mnoho dalšího — vše na jednom místě, na vašem vlastním serveru.',
+    'TREK FAMILY je samohostovaný plánovač cest, který vám pomůže organizovat výlety od prvního nápadu po poslední vzpomínku. Denní plánování, rozpočet, balicí seznamy, fotky a mnoho dalšího — vše na jednom místě, na vašem vlastním serveru.',
   'settings.about.madeWith': 'Vytvořeno s',
   'settings.about.madeBy': 'Mauricem a rostoucí open-source komunitou.',
   'settings.username': 'Uživatelské jméno',
@@ -314,7 +314,7 @@ const settings: TranslationStrings = {
   'settings.airtrail.allowInsecureTlsHint': 'Povolte pouze pro důvěryhodnou instanci ve vlastní síti.',
   'settings.airtrail.writeBack': 'Zapisovat změny zpět do AirTrail',
   'settings.airtrail.writeBackHint':
-    'Ve výchozím stavu vypnuto: AirTrail je zdrojem pravdy a TREK z něj pouze čte. Zapněte, chcete-li odesílat úpravy provedené v TREK zpět do AirTrail.',
+    'Ve výchozím stavu vypnuto: AirTrail je zdrojem pravdy a TREK FAMILY z něj pouze čte. Zapněte, chcete-li odesílat úpravy provedené v TREK FAMILY zpět do AirTrail.',
   'settings.airtrail.connected': 'Připojeno',
   'settings.airtrail.notConnected': 'Nepřipojeno',
   'settings.airtrail.toast.saved': 'Připojení k AirTrail uloženo',

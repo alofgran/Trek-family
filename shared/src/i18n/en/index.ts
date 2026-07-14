@@ -35,6 +35,7 @@ import stats from './stats';
 import system_notice from './system_notice';
 import todo from './todo';
 import transport from './transport';
+import travelers from './travelers';
 import trip from './trip';
 import trips from './trips';
 import undo from './undo';
@@ -82,5 +83,6 @@ const locale = {
   ...oauth,
   ...system_notice,
   ...transport,
+  ...travelers,
 };
 export default locale;
